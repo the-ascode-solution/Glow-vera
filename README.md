@@ -7,19 +7,20 @@ A modern, high-performance e-commerce solution for **Glowvera Naturals**, specia
 ## ✨ Key Features
 
 ### 🛍️ Premium Shopping Experience
+- **Dedicated Brand Pages**: Comprehensive **About Us** and **Contact Us** pages detailing the brand's artisanal story and commitment to sustainability.
+- **Legal Compliance**: Built-in templates for **Privacy Policy**, **Terms of Service**, and **Shipping & Returns**.
 - **Localized PKR Support**: Site is natively anchored to PKR currency with automated formatting.
 - **Dynamic Checkout**: Support for **Cash on Delivery (COD)**, **50% Advance**, and **Full Advance** payment models.
 - **Smart Promo System**: Apply discount codes for percentage-off, fixed-amount, or **Free Delivery**.
-- **Real-time Tax Calculation**: Automatic tax adjustment based on selected payment method.
 - **WhatsApp Support**: Floating support widget integrated for instant customer service.
-- **Responsive Design**: Fully mobile-optimized using a modern, premium "Glassmorphism" aesthetic.
 
 ### 🛡️ Professional Admin Dashboard
+- **Admin Message Center**: Dedicated interface to manage customer inquiries from the contact form, including email reply support.
 - **Product Management**: Full CRUD suite with **local file upload** support (no external dependencies).
-- **Order Tracking**: Comprehensive order list with status updates (Pending, Shipped, Delivered, etc.).
+- **Order Tracking**: Comprehensive order list with status updates (Pending, Processing, Shipped, Delivered).
 - **Printable Invoices**: One-click professional bill generation for order fulfillment.
 - **System Settings**: Admin-controlled tax rates (per payment method) and flat shipping fees.
-- **Promo Code Engine**: Create and manage detailed coupons with specific application rules.
+- **Refactored Architecture**: Centralized `admin_base.html` ensures design consistency and easy scalability across all admin sub-panels.
 
 ---
 
@@ -38,8 +39,8 @@ A modern, high-performance e-commerce solution for **Glowvera Naturals**, specia
 ### 1. Environment Setup
 Clone the repository and ensure you have Python installed.
 ```bash
-git clone <repository-url>
-cd "Glowvera Naturals"
+python -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 ```
 
 ### 2. Install Dependencies
@@ -74,9 +75,11 @@ Glowvera Naturals/
 │   ├── css/style.css      # Premium UI Styles
 │   └── images/            # Local Asset Storage (Products, Logo)
 ├── templates/             # Jinja2 Layouts
-│   ├── admin_*.html       # Dashboard & Control Panels
-│   ├── checkout.html      # Dynamic Payment Logic
-│   └── invoice.html      # Printable Billing Template
+│   ├── admin_base.html    # Master Admin Layout
+│   ├── admin_*.html       # Dashboard, Messages, Orders, etc.
+│   ├── about.html         # Brand Story Page
+│   ├── contact.html       # Customer Inquiry Page
+│   └── *_policy.html      # Legal & Policy Templates
 └── requirements.txt       # Project Dependencies
 ```
 
@@ -86,7 +89,7 @@ Glowvera Naturals/
 The site utilizes a curated color palette:
 - **Primary**: `#2E7D32` (Forest Green)
 - **Accent**: `#81C784` (Soft Leaf)
-- **Background**: Modern `#FAFAFA` with Glassmorphism overlays.
+- **Background**: Modern `#FAFAFA` with custom nature-inspired micro-animations.
 
 ---
 
@@ -95,4 +98,4 @@ Integrated WhatsApp support link for direct customer inquiries.
 Official Message Link: [Chat with Support](https://wa.me/message/IRE7QJVHVL6JN1)
 
 ---
-**Glowvera Naturals** - *Pure Beauty from Nature* 🌿
+**Glowvera Naturals** - *Pure Beauty from Nature* 🌿 | © 2026 All Rights Reserved

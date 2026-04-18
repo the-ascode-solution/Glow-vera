@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+
+{% block title %}About Us - Glowvera Naturals{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<section class="hero-section py-5 mb-5">
+    <div class="container text-center">
+        <h1 class="hero-title">Our Story</h1>
+        <p class="hero-subtitle">Rooted in nature, crafted with love, and committed to your natural glow.</p>
+    </div>
+</section>
+
+<!-- About Detail Section -->
+<section class="py-5">
+    <div class="container">
+        <div class="row align-items-center mb-5">
+            <div class="col-lg-6 mb-4 mb-lg-0">
+                <div class="pe-lg-5">
+                    <h2 class="section-title text-start mb-4">Pure Intentions, Pure Ingredients</h2>
+                    <p class="lead text-muted mb-4">Glowvera Naturals was founded on the simple principle that skincare should be a celebration of nature's bounty.</p>
+                    <p class="mb-4">Our journey began in a small kitchen, experimenting with the healing properties of fresh Aloe Vera and cold-pressed oils. We were tired of seeing labels filled with unpronounceable chemicals and synthetic fragrances. We believed there was a better way—a way to achieve radiant skin and healthy hair using only what the Earth provides.</p>
+                    <p>Today, while we've grown, our core values remain unchanged. Every batch is still handcrafted with the same attention to detail, ensuring that every drop of oil and every bar of soap carries the essence of purity.</p>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="position-relative">
+                    <img src="{{ url_for('static', filename='images/herosection.jpg') }}" alt="Natural Ingredients" class="img-fluid rounded-4 shadow-lg">
+                    <div class="position-absolute bottom-0 start-0 m-4 p-4 bg-white rounded-3 shadow-sm d-none d-md-block">
+                        <h5 class="text-success mb-1">100% Organic</h5>
+                        <p class="small text-muted mb-0">Certified Sustainable Sourcing</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row align-items-center flex-row-reverse py-5">
+            <div class="col-lg-6 mb-4 mb-lg-0">
+                <div class="ps-lg-5">
+                    <h2 class="section-title text-start mb-4">Our Commitment</h2>
+                    <p class="mb-4">We don't just care about your skin; we care about the world we live in. Sustainability is at the heart of Glowvera Naturals. From our biodegradable packaging to our cruelty-free testing methods, we strive to minimize our environmental footprint.</p>
+                    <div class="row g-4 mt-2">
+                        <div class="col-sm-6">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-check-circle text-success me-3 fs-3"></i>
+                                <div>
+                                    <h6 class="mb-0">Cruelty Free</h6>
+                                    <p class="small text-muted mb-0">Never tested on animals</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-check-circle text-success me-3 fs-3"></i>
+                                <div>
+                                    <h6 class="mb-0">Vegan Friendly</h6>
+                                    <p class="small text-muted mb-0">Plant-based excellence</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-check-circle text-success me-3 fs-3"></i>
+                                <div>
+                                    <h6 class="mb-0">Paraben Free</h6>
+                                    <p class="small text-muted mb-0">No harmful synthetics</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-check-circle text-success me-3 fs-3"></i>
+                                <div>
+                                    <h6 class="mb-0">Eco-Packaging</h6>
+                                    <p class="small text-muted mb-0">Recyclable materials</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <img src="{{ url_for('static', filename='images/logo.jpeg') }}" alt="Glowvera Workshop" class="img-fluid rounded-4 shadow-lg">
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Values Section -->
+<section class="featured-section py-5">
+    <div class="container text-center">
+        <h2 class="section-title mb-5">Why Choose Glowvera?</h2>
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="feature-card p-5 h-100 bg-white shadow-sm border-0 rounded-4">
+                    <div class="icon-circle bg-pale-green mb-4 mx-auto">
+                        <i class="fas fa-flask text-success"></i>
+                    </div>
+                    <h4>Small Batches</h4>
+                    <p class="text-muted">We produce in small quantities to maintain freshness and potency in every product.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-card p-5 h-100 bg-white shadow-sm border-0 rounded-4">
+                    <div class="icon-circle bg-pale-green mb-4 mx-auto">
+                        <i class="fas fa-leaf text-success"></i>
+                    </div>
+                    <h4>Pure Sourcing</h4>
+                    <p class="text-muted">Only the highest grade organic ingredients make it into our formulations.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-card p-5 h-100 bg-white shadow-sm border-0 rounded-4">
+                    <div class="icon-circle bg-pale-green mb-4 mx-auto">
+                        <i class="fas fa-heart text-success"></i>
+                    </div>
+                    <h4>Artisan Crafted</h4>
+                    <p class="text-muted">A human touch in every step, from mixing to packaging with care.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CTA Section -->
+<section class="py-5">
+    <div class="container text-center py-5">
+        <h2 class="mb-4">Ready to experience the glow?</h2>
+        <p class="lead mb-4">Discover our full range of natural skincare and haircare.</p>
+        <a href="{{ url_for('products') }}" class="btn btn-primary btn-lg px-5">Explore Our Shop</a>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .icon-circle {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        background: var(--pale-green);
+    }
+    .bg-pale-green {
+        background-color: #E8F5E8;
+    }
+</style>
+{% endblock %}

@@ -1,393 +1,196 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manage Orders - Glowvera Naturals</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --primary-green: #2E7D32;
-            --light-green: #66BB6A;
-            --accent-green: #81C784;
-            --pale-green: #E8F5E8;
-        }
-        
-        body {
-            font-family: 'Poppins', sans-serif;
-            background-color: #FAFAFA;
-        }
-        
-        .admin-sidebar {
-            background: linear-gradient(135deg, var(--primary-green), var(--light-green));
-            min-height: 100vh;
-            color: white;
-        }
-        
-        .admin-sidebar .nav-link {
-            color: white;
-            padding: 1rem 1.5rem;
-            border-radius: 0;
-            transition: all 0.3s ease;
-        }
-        
-        .admin-sidebar .nav-link:hover,
-        .admin-sidebar .nav-link.active {
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-        }
-        
-        .admin-content {
-            padding: 2rem;
-        }
-        
-        .admin-title {
-            font-family: 'Playfair Display', serif;
-            color: var(--primary-green);
-            font-size: 2rem;
-            font-weight: 700;
-            margin-bottom: 2rem;
-        }
-        
-        .orders-table {
-            background: white;
-            border-radius: 15px;
-            padding: 1.5rem;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
-        }
-        
-        .btn-primary {
-            background: linear-gradient(135deg, var(--primary-green), var(--light-green));
-            border: none;
-            border-radius: 25px;
-            padding: 0.5rem 1.5rem;
-            font-weight: 500;
-            transition: all 0.3s ease;
-        }
-        
-        .btn-primary:hover {
-            background: linear-gradient(135deg, var(--light-green), var(--accent-green));
-            transform: translateY(-2px);
-        }
-        
-        .btn-sm {
-            padding: 0.25rem 0.75rem;
-            font-size: 0.875rem;
-        }
-        
-        .badge-status {
-            padding: 0.25rem 0.75rem;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: 500;
-        }
-        
-        .badge-pending {
-            background: linear-gradient(135deg, #FFD54F, #FFA726);
-            color: #333;
-        }
-        
-        .badge-processing {
-            background: linear-gradient(135deg, #64B5F6, #42A5F5);
-            color: white;
-        }
-        
-        .badge-shipped {
-            background: linear-gradient(135deg, #81C784, #66BB6A);
-            color: white;
-        }
-        
-        .badge-delivered {
-            background: linear-gradient(135deg, #4DB6AC, #26A69A);
-            color: white;
-        }
-        
-        .order-customer {
-            font-weight: 600;
-            color: var(--primary-green);
-        }
-        
-        .order-total {
-            font-weight: 700;
-            color: var(--primary-green);
-        }
-        
-        .filter-section {
-            background: white;
-            border-radius: 15px;
-            padding: 1.5rem;
-            margin-bottom: 2rem;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
-        }
-        
-        .form-select, .form-control {
-            border-radius: 10px;
-            border: 1px solid #E0E0E0;
-        }
-        
-        .search-box {
-            position: relative;
-        }
-        
-        .search-box .form-control {
-            padding-left: 2.5rem;
-        }
-        
-        .search-box i {
-            position: absolute;
-            left: 1rem;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #999;
-        }
-    </style>
-</head>
-<body>
-    <div class="container-fluid">
-        <div class="row">
-            <!-- Sidebar -->
-            <div class="col-md-3 col-lg-2 p-0">
-                <div class="admin-sidebar">
-                    <div class="p-4">
-                        <h4 class="mb-4">
-                            <i class="fas fa-leaf me-2"></i>Glowvera Admin
-                        </h4>
-                    </div>
-                    <nav class="nav flex-column">
-                        <a href="{{ url_for('admin_dashboard') }}" class="nav-link">
-                            <i class="fas fa-tachometer-alt me-2"></i>Dashboard
-                        </a>
-                        <a href="{{ url_for('admin_products') }}" class="nav-link">
-                            <i class="fas fa-box me-2"></i>Products
-                        </a>
-                        <a href="{{ url_for('admin_orders') }}" class="nav-link active">
-                            <i class="fas fa-shopping-cart me-2"></i>Orders
-                        </a>
-                        <a href="{{ url_for('admin_promo_codes') }}" class="nav-link">
-                            <i class="fas fa-tags me-2"></i>Promo Codes
-                        </a>
-                        <a href="{{ url_for('admin_settings') }}" class="nav-link">
-                            <i class="fas fa-cog me-2"></i>Settings
-                        </a>
-                        <hr class="my-3 bg-white-50">
-                        <a href="{{ url_for('index') }}" class="nav-link">
-                            <i class="fas fa-store me-2"></i>View Store
-                        </a>
-                        <a href="{{ url_for('admin_logout') }}" class="nav-link">
-                            <i class="fas fa-sign-out-alt me-2"></i>Logout
-                        </a>
-                    </nav>
-                </div>
-            </div>
-            
-            <!-- Main Content -->
-            <div class="col-md-9 col-lg-10">
-                <div class="admin-content">
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <h1 class="admin-title">Manage Orders</h1>
-                        <div class="d-flex gap-2">
-                            <button class="btn btn-outline-primary btn-sm" onclick="window.print()">
-                                <i class="fas fa-print me-1"></i>Print
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <!-- Filters -->
-                    <div class="filter-section">
-                        <div class="row g-3">
-                            <div class="col-md-4">
-                                <label class="form-label">Search Orders</label>
-                                <div class="search-box">
-                                    <i class="fas fa-search"></i>
-                                    <input type="text" class="form-control" id="searchOrders" placeholder="Search by order ID or customer name...">
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label">Status Filter</label>
-                                <select class="form-select" id="statusFilter">
-                                    <option value="">All Status</option>
-                                    <option value="pending">Pending</option>
-                                    <option value="processing">Processing</option>
-                                    <option value="shipped">Shipped</option>
-                                    <option value="delivered">Delivered</option>
-                                </select>
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label">Date Range</label>
-                                <select class="form-select" id="dateFilter">
-                                    <option value="">All Time</option>
-                                    <option value="today">Today</option>
-                                    <option value="week">This Week</option>
-                                    <option value="month">This Month</option>
-                                </select>
-                            </div>
-                            <div class="col-md-2 d-flex align-items-end">
-                                <button class="btn btn-primary w-100" onclick="applyFilters()">
-                                    <i class="fas fa-filter me-1"></i>Apply
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Orders Table -->
-                    <div class="orders-table">
-                        {% if orders %}
-                        <div class="table-responsive">
-                            <table class="table table-hover" id="ordersTable">
-                                <thead>
-                                    <tr>
-                                        <th>Order ID</th>
-                                        <th>Customer</th>
-                                        <th>Date</th>
-                                        <th>Items</th>
-                                        <th>Total</th>
-                                        <th>Status</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for order in orders %}
-                                    <tr data-status="{{ order.status }}" data-customer="{{ order.customer_name }}" data-id="{{ order.id }}">
-                                        <td>
-                                            <strong>#{{ order.id }}</strong>
-                                        </td>
-                                        <td>
-                                            <div class="order-customer">
-                                                {{ order.customer_name }}
-                                            </div>
-                                            <small class="text-muted">{{ order.customer_email }}</small>
-                                        </td>
-                                        <td>
-                                            {{ order.created_at.strftime('%m/%d/%Y') }}
-                                            <br>
-                                            <small class="text-muted">{{ order.created_at.strftime('%I:%M %p') }}</small>
-                                        </td>
-                                        <td>
-                                            {{ order.order_items|length }} items
-                                        </td>
-                                        <td>
-                                            <span class="order-total">{{ format_price(order.total_amount) }}</span>
-                                        </td>
-                                        <td>
-                                            <span class="badge-status badge-{{ order.status }}">
-                                                {{ order.status.title() }}
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <div class="btn-group" role="group">
-                                                <a href="{{ url_for('admin_order_detail', order_id=order.id) }}" 
-                                                   class="btn btn-sm btn-outline-primary">
-                                                    <i class="fas fa-eye"></i>
-                                                </a>
-                                                <div class="btn-group" role="group">
-                                                    <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle" 
-                                                            data-bs-toggle="dropdown">
-                                                        <i class="fas fa-cog"></i>
-                                                    </button>
-                                                    <ul class="dropdown-menu">
-                                                        <li><a class="dropdown-item status-update" href="#" data-order-id="{{ order.id }}" data-status="processing">Mark Processing</a></li>
-                                                        <li><a class="dropdown-item status-update" href="#" data-order-id="{{ order.id }}" data-status="shipped">Mark Shipped</a></li>
-                                                        <li><a class="dropdown-item status-update" href="#" data-order-id="{{ order.id }}" data-status="delivered">Mark Delivered</a></li>
-                                                    </ul>
-                                                </div>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                        {% else %}
-                        <div class="text-center py-5">
-                            <i class="fas fa-shopping-cart fa-3x text-muted mb-3"></i>
-                            <h4>No orders found</h4>
-                            <p class="text-muted">No orders have been placed yet.</p>
-                        </div>
-                        {% endif %}
-                    </div>
-                </div>
+{% extends "admin_base.html" %}
+
+{% set active_page = 'orders' %}
+
+{% block title %}Manage Orders - Glowvera Naturals{% endblock %}
+
+{% block extra_css %}
+<style>
+    .orders-table {
+        background: white;
+        border-radius: 15px;
+        padding: 1.5rem;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+    }
+    
+    .badge-status {
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 500;
+    }
+    
+    .badge-pending { background: linear-gradient(135deg, #FFD54F, #FFA726); color: #333; }
+    .badge-processing { background: linear-gradient(135deg, #64B5F6, #42A5F5); color: white; }
+    .badge-shipped { background: linear-gradient(135deg, #81C784, #66BB6A); color: white; }
+    .badge-delivered { background: linear-gradient(135deg, #4DB6AC, #26A69A); color: white; }
+    
+    .order-customer { font-weight: 600; color: var(--primary-green); }
+    .order-total { font-weight: 700; color: var(--primary-green); }
+    
+    .filter-section {
+        background: white;
+        border-radius: 15px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+    }
+    
+    .form-select, .form-control {
+        border-radius: 10px;
+        border: 1px solid #E0E0E0;
+    }
+    
+    .search-box { position: relative; }
+    .search-box .form-control { padding-left: 2.5rem; }
+    .search-box i {
+        position: absolute;
+        left: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #999;
+    }
+</style>
+{% endblock %}
+
+{% block admin_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="admin-title">Manage Orders</h1>
+    <div class="d-flex gap-2">
+        <button class="btn btn-outline-primary rounded-pill px-4" onclick="window.print()">
+            <i class="fas fa-print me-1"></i>Print List
+        </button>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="filter-section">
+    <div class="row g-3">
+        <div class="col-md-4">
+            <label class="form-label small text-muted">Search Orders</label>
+            <div class="search-box">
+                <i class="fas fa-search"></i>
+                <input type="text" class="form-control" id="searchOrders" placeholder="Order ID or customer name...">
             </div>
         </div>
+        <div class="col-md-3">
+            <label class="form-label small text-muted">Status</label>
+            <select class="form-select" id="statusFilter">
+                <option value="">All Status</option>
+                <option value="pending">Pending</option>
+                <option value="processing">Processing</option>
+                <option value="shipped">Shipped</option>
+                <option value="delivered">Delivered</option>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label small text-muted">Time Period</label>
+            <select class="form-select" id="dateFilter">
+                <option value="">All Time</option>
+                <option value="today">Today</option>
+                <option value="week">This Week</option>
+                <option value="month">This Month</option>
+            </select>
+        </div>
+        <div class="col-md-2 d-flex align-items-end">
+            <button class="btn btn-primary w-100 rounded-pill" onclick="applyFilters()">
+                <i class="fas fa-filter me-1"></i>Filter
+            </button>
+        </div>
     </div>
-    
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        // Search functionality
-        document.getElementById('searchOrders').addEventListener('input', function() {
-            const searchTerm = this.value.toLowerCase();
-            const rows = document.querySelectorAll('#ordersTable tbody tr');
+</div>
+
+<!-- Orders Table -->
+<div class="orders-table">
+    {% if orders %}
+    <div class="table-responsive">
+        <table class="table table-hover align-middle" id="ordersTable">
+            <thead class="bg-light">
+                <tr>
+                    <th class="border-0">Order ID</th>
+                    <th class="border-0">Customer</th>
+                    <th class="border-0">Date</th>
+                    <th class="border-0">Items</th>
+                    <th class="border-0">Total</th>
+                    <th class="border-0">Status</th>
+                    <th class="border-0 text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for order in orders %}
+                <tr data-status="{{ order.status }}" data-customer="{{ order.customer_name }}" data-id="{{ order.id }}">
+                    <td><span class="fw-bold">#{{ order.id }}</span></td>
+                    <td>
+                        <div class="order-customer">{{ order.customer_name }}</div>
+                        <small class="text-muted">{{ order.customer_email }}</small>
+                    </td>
+                    <td>
+                        <div class="small">{{ order.created_at.strftime('%m/%d/%Y') }}</div>
+                        <small class="text-muted">{{ order.created_at.strftime('%I:%M %p') }}</small>
+                    </td>
+                    <td><span class="badge bg-light text-dark rounded-pill px-3">{{ order.order_items|length }} items</span></td>
+                    <td><span class="order-total text-success">{{ format_price(order.total_amount) }}</span></td>
+                    <td>
+                        <span class="badge-status badge-{{ order.status }}">
+                            {{ order.status.title() }}
+                        </span>
+                    </td>
+                    <td class="text-end">
+                        <div class="btn-group shadow-sm rounded-pill overflow-hidden">
+                            <a href="{{ url_for('admin_order_detail', order_id=order.id) }}" 
+                               class="btn btn-sm btn-white border-end" title="View Details">
+                                <i class="fas fa-eye text-primary"></i>
+                            </a>
+                            <div class="btn-group">
+                                <button type="button" class="btn btn-sm btn-white dropdown-toggle dropdown-toggle-split" 
+                                        data-bs-toggle="dropdown" aria-expanded="false">
+                                    <span class="visually-hidden">Toggle Status</span>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end border-0 shadow">
+                                    <li><h6 class="dropdown-header">Update Status</h6></li>
+                                    <li><a class="dropdown-item status-update" href="#" data-order-id="{{ order.id }}" data-status="processing">Mark Processing</a></li>
+                                    <li><a class="dropdown-item status-update" href="#" data-order-id="{{ order.id }}" data-status="shipped">Mark Shipped</a></li>
+                                    <li><a class="dropdown-item status-update" href="#" data-order-id="{{ order.id }}" data-status="delivered">Mark Delivered</a></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="text-center py-5">
+        <div class="mb-3"><i class="fas fa-shopping-cart fa-3x text-muted opacity-25"></i></div>
+        <h4>No orders found</h4>
+        <p class="text-muted">Orders will appear here once customers start purchasing.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Simplified Filter Logic
+    function applyFilters() {
+        const searchTerm = document.getElementById('searchOrders').value.toLowerCase();
+        const status = document.getElementById('statusFilter').value;
+        const rows = document.querySelectorAll('#ordersTable tbody tr');
+        
+        rows.forEach(row => {
+            const orderId = row.dataset.id;
+            const customer = row.dataset.customer.toLowerCase();
+            const rowStatus = row.dataset.status;
             
-            rows.forEach(row => {
-                const orderId = row.dataset.id;
-                const customer = row.dataset.customer.toLowerCase();
-                
-                if (orderId.includes(searchTerm) || customer.includes(searchTerm)) {
-                    row.style.display = '';
-                } else {
-                    row.style.display = 'none';
-                }
-            });
-        });
-        
-        // Status filter
-        document.getElementById('statusFilter').addEventListener('change', function() {
-            const status = this.value;
-            const rows = document.querySelectorAll('#ordersTable tbody tr');
+            const matchesSearch = orderId.includes(searchTerm) || customer.includes(searchTerm);
+            const matchesStatus = status === '' || rowStatus === status;
             
-            rows.forEach(row => {
-                if (status === '' || row.dataset.status === status) {
-                    row.style.display = '';
-                } else {
-                    row.style.display = 'none';
-                }
-            });
+            row.style.display = (matchesSearch && matchesStatus) ? '' : 'none';
         });
-        
-        // Apply filters
-        function applyFilters() {
-            const searchTerm = document.getElementById('searchOrders').value.toLowerCase();
-            const status = document.getElementById('statusFilter').value;
-            const rows = document.querySelectorAll('#ordersTable tbody tr');
-            
-            rows.forEach(row => {
-                const orderId = row.dataset.id;
-                const customer = row.dataset.customer.toLowerCase();
-                const rowStatus = row.dataset.status;
-                
-                const matchesSearch = orderId.includes(searchTerm) || customer.includes(searchTerm);
-                const matchesStatus = status === '' || rowStatus === status;
-                
-                if (matchesSearch && matchesStatus) {
-                    row.style.display = '';
-                } else {
-                    row.style.display = 'none';
-                }
-            });
-        }
-        
-        // Update order status (placeholder function)
-        function updateOrderStatus(orderId, newStatus) {
-            if (confirm(`Are you sure you want to mark order #${orderId} as ${newStatus}?`)) {
-                // In a real application, this would make an API call
-                alert(`Order #${orderId} marked as ${newStatus}`);
-                // You would typically refresh the page or update the UI here
-            }
-        }
-        
-        // Add event listeners for status update links
-        document.addEventListener('DOMContentLoaded', function() {
-            const statusLinks = document.querySelectorAll('.status-update');
-            statusLinks.forEach(link => {
-                link.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    const orderId = this.dataset.orderId;
-                    const newStatus = this.dataset.status;
-                    updateOrderStatus(orderId, newStatus);
-                });
-            });
-        });
-    </script>
-</body>
-</html>
+    }
+
+    document.getElementById('searchOrders').addEventListener('input', applyFilters);
+    document.getElementById('statusFilter').addEventListener('change', applyFilters);
+</script>
+{% endblock %}

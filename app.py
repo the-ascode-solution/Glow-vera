@@ -127,6 +127,15 @@ class SystemSetting(db.Model):
     setting_value = db.Column(db.String(255), nullable=False)
 
 
+class ContactMessage(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    email = db.Column(db.String(120), nullable=False)
+    subject = db.Column(db.String(200))
+    message = db.Column(db.Text, nullable=False)
+    status = db.Column(db.String(20), default='new')  # 'new', 'read', 'replied'
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
@@ -151,6 +160,67 @@ def products():
 def product_detail(product_id):
     product = Product.query.get_or_404(product_id)
     return render_template('product_detail.html', product=product)
+
+@app.route('/about')
+def about():
+    return render_template('about.html')
+
+@app.route('/contact', methods=['GET', 'POST'])
+def contact():
+    if request.method == 'POST':
+        name = request.form.get('name')
+        email = request.form.get('email')
+        subject = request.form.get('subject')
+        message = request.form.get('message')
+        
+        new_msg = ContactMessage(
+            name=name,
+            email=email,
+            subject=subject,
+            message=message
+        )
+        db.session.add(new_msg)
+        db.session.commit()
+        
+        flash('Thank you! Your message has been sent successfully.', 'success')
+        return redirect(url_for('contact'))
+        
+    return render_template('contact.html')
+
+@app.route('/admin/messages')
+@login_required
+def admin_messages():
+    if not session.get('is_admin'):
+        flash('Unauthorized access', 'error')
+        return redirect(url_for('index'))
+    
+    messages = ContactMessage.query.order_by(ContactMessage.created_at.desc()).all()
+    return render_template('admin_messages.html', messages=messages)
+
+@app.route('/admin/message/<int:msg_id>/delete', methods=['POST'])
+@login_required
+def admin_delete_message(msg_id):
+    if not session.get('is_admin'):
+        flash('Unauthorized access', 'error')
+        return redirect(url_for('index'))
+    
+    msg = ContactMessage.query.get_or_404(msg_id)
+    db.session.delete(msg)
+    db.session.commit()
+    flash('Message deleted.', 'info')
+    return redirect(url_for('admin_messages'))
+
+@app.route('/privacy-policy')
+def privacy_policy():
+    return render_template('privacy_policy.html')
+
+@app.route('/terms-of-service')
+def terms_of_service():
+    return render_template('terms_of_service.html')
+
+@app.route('/shipping-policy')
+def shipping_policy():
+    return render_template('shipping_policy.html')
 
 @app.route('/add_to_cart/<int:product_id>')
 def add_to_cart(product_id):
@@ -240,12 +310,14 @@ def admin_dashboard():
     
     total_products = Product.query.count()
     total_orders = Order.query.count()
+    total_messages = ContactMessage.query.count()
     recent_orders = Order.query.order_by(Order.created_at.desc()).limit(5).all()
     low_stock_products = Product.query.filter(Product.stock_quantity < 10).all()
     
     return render_template('admin_dashboard.html', 
                          total_products=total_products,
                          total_orders=total_orders,
+                         total_messages=total_messages,
                          recent_orders=recent_orders,
                          low_stock_products=low_stock_products)
 
@@ -413,12 +485,6 @@ def admin_add_promo():
         discount_type = request.form['discount_type']
         discount_value = float(request.form['discount_value'])
         applies_to = request.form['applies_to']
-        
-        # If fixed amount, convert from admin's current currency to USD (base) for storage
-        if discount_type == 'fixed':
-            current_currency = session.get('currency', 'USD')
-            rate = CURRENCIES.get(current_currency, {}).get('rate', 1.0)
-            discount_value = discount_value / rate
         
         # Check if code already exists
         existing = PromoCode.query.filter_by(code=code).first()
