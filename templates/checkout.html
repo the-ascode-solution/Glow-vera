@@ -68,49 +68,59 @@
                     </div>
                 </div>
                 
-                <!-- Payment Information -->
+                <!-- Payment Method -->
                 <div class="card mb-4">
                     <div class="card-header bg-light">
                         <h5 class="mb-0">
-                            <i class="fas fa-credit-card me-2"></i>Payment Information
+                            <i class="fas fa-wallet me-2"></i>Payment Method
                         </h5>
                     </div>
                     <div class="card-body">
-                        <div class="mb-3">
-                            <label for="card_name" class="form-label">Name on Card</label>
-                            <input type="text" class="form-control" id="card_name" name="card_name" required>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label for="card_number" class="form-label">Card Number</label>
-                            <input type="text" class="form-control" id="card_number" name="card_number" 
-                                   placeholder="1234 5678 9012 3456" required>
-                        </div>
-                        
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="expiry" class="form-label">Expiry Date</label>
-                                <input type="text" class="form-control" id="expiry" name="expiry" 
-                                       placeholder="MM/YY" required>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="cvv" class="form-label">CVV</label>
-                                <input type="text" class="form-control" id="cvv" name="cvv" 
-                                       placeholder="123" required>
-                            </div>
-                        </div>
-                        
-                        <div class="form-check mb-3">
-                            <input class="form-check-input" type="checkbox" id="save_card">
-                            <label class="form-check-label" for="save_card">
-                                Save card information for future purchases
+                        <div class="form-check mb-3 p-3 border rounded">
+                            <input class="form-check-input" type="radio" name="payment_method" id="cod" value="cod" required checked>
+                            <label class="form-check-label w-100" for="cod">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <strong><i class="fas fa-money-bill-wave me-2 text-success"></i>Cash on Delivery (COD)</strong>
+                                        <p class="text-muted mb-0 small mt-1">Pay the full amount when your order is delivered to your doorstep.</p>
+                                    </div>
+                                </div>
                             </label>
+                        </div>
+                        
+                        <div class="form-check mb-3 p-3 border rounded">
+                            <input class="form-check-input" type="radio" name="payment_method" id="half_advance" value="half_advance" required>
+                            <label class="form-check-label w-100" for="half_advance">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <strong><i class="fas fa-hand-holding-usd me-2 text-warning"></i>50% Advance + 50% After Delivery</strong>
+                                        <p class="text-muted mb-0 small mt-1">Pay half upfront via bank transfer, and the remaining half upon delivery.</p>
+                                    </div>
+                                </div>
+                            </label>
+                        </div>
+                        
+                        <div class="form-check mb-3 p-3 border rounded">
+                            <input class="form-check-input" type="radio" name="payment_method" id="full_advance" value="full_advance" required>
+                            <label class="form-check-label w-100" for="full_advance">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <strong><i class="fas fa-university me-2 text-primary"></i>Full Advance Payment</strong>
+                                        <p class="text-muted mb-0 small mt-1">Pay the full amount upfront via bank transfer before shipping.</p>
+                                    </div>
+                                </div>
+                            </label>
+                        </div>
+                        
+                        <div class="alert alert-info mt-3 mb-0">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>How it works:</strong> After placing your order, our team will reach out to you via <strong>phone</strong> and <strong>email</strong> to confirm your order and share the bank account details for online payment. No card information is required.
                         </div>
                     </div>
                 </div>
                 
                 <button type="submit" class="btn btn-primary btn-lg">
-                    <i class="fas fa-lock me-2"></i>Complete Purchase
+                    <i class="fas fa-check-circle me-2"></i>Place Order
                 </button>
             </form>
         </div>

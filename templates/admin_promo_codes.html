@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Promo Codes - Glowvera Naturals</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-green: #2E7D32;
+            --light-green: #66BB6A;
+            --accent-green: #81C784;
+            --pale-green: #E8F5E8;
+        }
+        
+        body { font-family: 'Poppins', sans-serif; background-color: #FAFAFA; }
+        
+        .admin-sidebar {
+            background: linear-gradient(135deg, var(--primary-green), var(--light-green));
+            min-height: 100vh;
+            color: white;
+        }
+        .admin-sidebar .nav-link {
+            color: white; padding: 1rem 1.5rem; border-radius: 0; transition: all 0.3s ease;
+        }
+        .admin-sidebar .nav-link:hover, .admin-sidebar .nav-link.active {
+            background: rgba(255, 255, 255, 0.1); color: white;
+        }
+        .admin-content { padding: 2rem; }
+        .admin-title {
+            font-family: 'Playfair Display', serif; color: var(--primary-green);
+            font-size: 2rem; font-weight: 700; margin-bottom: 2rem;
+        }
+        .promos-table {
+            background: white; border-radius: 15px; padding: 1.5rem;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-green), var(--light-green));
+            border: none; border-radius: 25px; padding: 0.5rem 1.5rem;
+            font-weight: 500; transition: all 0.3s ease;
+        }
+        .btn-primary:hover {
+            background: linear-gradient(135deg, var(--light-green), var(--accent-green));
+            transform: translateY(-2px);
+        }
+        .promo-code-badge {
+            font-family: monospace; font-size: 1rem; font-weight: 700;
+            background: var(--pale-green); color: var(--primary-green);
+            padding: 0.3rem 0.75rem; border-radius: 8px; letter-spacing: 1px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-md-3 col-lg-2 p-0">
+                <div class="admin-sidebar">
+                    <div class="p-4">
+                        <h4 class="mb-4"><i class="fas fa-leaf me-2"></i>Glowvera Admin</h4>
+                    </div>
+                    <nav class="nav flex-column">
+                        <a href="{{ url_for('admin_dashboard') }}" class="nav-link">
+                            <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+                        </a>
+                        <a href="{{ url_for('admin_products') }}" class="nav-link">
+                            <i class="fas fa-box me-2"></i>Products
+                        </a>
+                        <a href="{{ url_for('admin_orders') }}" class="nav-link">
+                            <i class="fas fa-shopping-cart me-2"></i>Orders
+                        </a>
+                        <a href="{{ url_for('admin_promo_codes') }}" class="nav-link active">
+                            <i class="fas fa-tags me-2"></i>Promo Codes
+                        </a>
+                        <hr class="my-3 bg-white-50">
+                        <div class="px-3 mb-2">
+                            <small class="text-white-50">Currency</small>
+                            <select class="form-select form-select-sm mt-1" onchange="window.location.href='/set_currency/'+this.value" style="background-color: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.3);">
+                                {% for code, info in currencies.items() %}
+                                <option value="{{ code }}" {{ 'selected' if current_currency == code }} style="color: #333;">{{ info.symbol }} {{ code }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <hr class="my-3 bg-white-50">
+                        <a href="{{ url_for('index') }}" class="nav-link">
+                            <i class="fas fa-store me-2"></i>View Store
+                        </a>
+                        <a href="{{ url_for('admin_logout') }}" class="nav-link">
+                            <i class="fas fa-sign-out-alt me-2"></i>Logout
+                        </a>
+                    </nav>
+                </div>
+            </div>
+            
+            <!-- Main Content -->
+            <div class="col-md-9 col-lg-10">
+                <div class="admin-content">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h1 class="admin-title">Promo Codes</h1>
+                        <a href="{{ url_for('admin_add_promo') }}" class="btn btn-primary">
+                            <i class="fas fa-plus me-2"></i>Create Promo Code
+                        </a>
+                    </div>
+                    
+                    <!-- Flash Messages -->
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                                    {{ message }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+                    
+                    <div class="promos-table">
+                        {% if promos %}
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle">
+                                <thead>
+                                    <tr>
+                                        <th>Code</th>
+                                        <th>Name</th>
+                                        <th>Discount</th>
+                                        <th>Applies To</th>
+                                        <th>Status</th>
+                                        <th>Created</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for promo in promos %}
+                                    <tr>
+                                        <td><span class="promo-code-badge">{{ promo.code }}</span></td>
+                                        <td>{{ promo.name }}</td>
+                                        <td>
+                                            {% if promo.discount_type == 'percentage' %}
+                                                <span class="badge bg-info text-dark">{{ promo.discount_value }}% OFF</span>
+                                            {% else %}
+                                                <span class="badge bg-success">{{ format_price(promo.discount_value) }} OFF</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if promo.applies_to == 'all' %}
+                                                <span class="badge bg-primary">All Products</span>
+                                            {% else %}
+                                                <span class="badge bg-warning text-dark">{{ promo.products|length }} Product(s)</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if promo.is_active %}
+                                                <span class="badge bg-success"><i class="fas fa-check me-1"></i>Active</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary"><i class="fas fa-times me-1"></i>Inactive</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ promo.created_at.strftime('%m/%d/%Y') }}</td>
+                                        <td>
+                                            <div class="btn-group" role="group">
+                                                <form method="POST" action="{{ url_for('admin_toggle_promo', promo_id=promo.id) }}" class="d-inline">
+                                                    <button type="submit" class="btn btn-sm {{ 'btn-outline-warning' if promo.is_active else 'btn-outline-success' }}" 
+                                                            title="{{ 'Deactivate' if promo.is_active else 'Activate' }}">
+                                                        <i class="fas {{ 'fa-pause' if promo.is_active else 'fa-play' }}"></i>
+                                                    </button>
+                                                </form>
+                                                <form method="POST" action="{{ url_for('admin_delete_promo', promo_id=promo.id) }}" class="d-inline" 
+                                                      onsubmit="return confirm('Are you sure you want to delete this promo code?')">
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-tags fa-3x text-muted mb-3"></i>
+                            <h4>No promo codes yet</h4>
+                            <p class="text-muted">Create your first promo code to offer discounts.</p>
+                            <a href="{{ url_for('admin_add_promo') }}" class="btn btn-primary">
+                                <i class="fas fa-plus me-2"></i>Create Promo Code
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

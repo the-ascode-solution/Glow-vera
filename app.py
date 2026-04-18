@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, redirect, url_for, flash, ses
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.utils import secure_filename
 from datetime import datetime
 import os
 
@@ -10,7 +11,15 @@ app.config['SECRET_KEY'] = 'glowvera_naturals_secret_key_2024'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///glowvera.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
+UPLOAD_FOLDER = os.path.join(app.root_path, 'static', 'images', 'products')
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
 db = SQLAlchemy(app)
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 # Currency Configuration
 CURRENCIES = {
@@ -39,6 +48,16 @@ def utility_processor():
         return f"{symbol}{converted_price:,.2f}"
     
     return dict(format_price=format_price, currencies=CURRENCIES, current_currency=session.get('currency', 'USD'))
+
+@app.template_filter('nl2br')
+def nl2br_filter(s):
+    if not s:
+        return ""
+    return s.replace('\n', '<br>\n')
+
+@app.route('/favicon.ico')
+def favicon():
+    return '', 204
 
 @app.route('/set_currency/<currency_code>')
 def set_currency(currency_code):
@@ -88,6 +107,7 @@ class Order(db.Model):
     customer_phone = db.Column(db.String(20))
     total_amount = db.Column(db.Float, nullable=False)
     status = db.Column(db.String(20), default='pending')
+    payment_method = db.Column(db.String(30), default='cod')
     shipping_address = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
@@ -101,6 +121,24 @@ class OrderItem(db.Model):
     price = db.Column(db.Float, nullable=False)
     
     product = db.relationship('Product', backref='order_items')
+
+# Association table for promo codes and specific products
+promo_products = db.Table('promo_products',
+    db.Column('promo_id', db.Integer, db.ForeignKey('promo_code.id'), primary_key=True),
+    db.Column('product_id', db.Integer, db.ForeignKey('product.id'), primary_key=True)
+)
+
+class PromoCode(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    code = db.Column(db.String(50), unique=True, nullable=False)
+    name = db.Column(db.String(100), nullable=False)
+    discount_type = db.Column(db.String(20), nullable=False)  # 'percentage' or 'fixed'
+    discount_value = db.Column(db.Float, nullable=False)
+    applies_to = db.Column(db.String(20), default='all')  # 'all' or 'specific'
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    products = db.relationship('Product', secondary=promo_products, backref='promo_codes')
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -242,11 +280,20 @@ def admin_add_product():
         return redirect(url_for('index'))
     
     if request.method == 'POST':
+        image_url = request.form['image_url']
+        if 'image_file' in request.files:
+            file = request.files['image_file']
+            if file and allowed_file(file.filename):
+                filename = secure_filename(file.filename)
+                file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                file.save(file_path)
+                image_url = url_for('static', filename=f'images/products/{filename}')
+
         new_product = Product(
             name=request.form['name'],
             description=request.form['description'],
             price=float(request.form['price']),
-            image_url=request.form['image_url'],
+            image_url=image_url,
             category=request.form['category'],
             stock_quantity=int(request.form['stock_quantity']),
             ingredients=request.form.get('ingredients', ''),
@@ -271,10 +318,19 @@ def admin_edit_product(product_id):
     product = Product.query.get_or_404(product_id)
     
     if request.method == 'POST':
+        image_url = request.form['image_url']
+        if 'image_file' in request.files:
+            file = request.files['image_file']
+            if file and allowed_file(file.filename):
+                filename = secure_filename(file.filename)
+                file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                file.save(file_path)
+                image_url = url_for('static', filename=f'images/products/{filename}')
+                
         product.name = request.form['name']
         product.description = request.form['description']
         product.price = float(request.form['price'])
-        product.image_url = request.form['image_url']
+        product.image_url = image_url
         product.category = request.form['category']
         product.stock_quantity = int(request.form['stock_quantity'])
         product.ingredients = request.form.get('ingredients', '')
@@ -320,6 +376,93 @@ def admin_order_detail(order_id):
     order = Order.query.get_or_404(order_id)
     return render_template('admin_order_detail.html', order=order)
 
+@app.route('/admin/promo-codes')
+@login_required
+def admin_promo_codes():
+    if not session.get('is_admin'):
+        flash('Unauthorized access', 'error')
+        return redirect(url_for('index'))
+    
+    promos = PromoCode.query.order_by(PromoCode.created_at.desc()).all()
+    return render_template('admin_promo_codes.html', promos=promos)
+
+@app.route('/admin/promo-codes/new', methods=['GET', 'POST'])
+@login_required
+def admin_add_promo():
+    if not session.get('is_admin'):
+        flash('Unauthorized access', 'error')
+        return redirect(url_for('index'))
+    
+    if request.method == 'POST':
+        code = request.form['code'].strip().upper()
+        name = request.form['name'].strip()
+        discount_type = request.form['discount_type']
+        discount_value = float(request.form['discount_value'])
+        applies_to = request.form['applies_to']
+        
+        # If fixed amount, convert from admin's current currency to USD (base) for storage
+        if discount_type == 'fixed':
+            current_currency = session.get('currency', 'USD')
+            rate = CURRENCIES.get(current_currency, {}).get('rate', 1.0)
+            discount_value = discount_value / rate
+        
+        # Check if code already exists
+        existing = PromoCode.query.filter_by(code=code).first()
+        if existing:
+            flash('Promo code already exists!', 'error')
+            products = Product.query.all()
+            return render_template('admin_promo_form.html', promo=None, products=products)
+        
+        promo = PromoCode(
+            code=code,
+            name=name,
+            discount_type=discount_type,
+            discount_value=discount_value,
+            applies_to=applies_to
+        )
+        
+        if applies_to == 'specific':
+            selected_ids = request.form.getlist('product_ids')
+            for pid in selected_ids:
+                product = Product.query.get(int(pid))
+                if product:
+                    promo.products.append(product)
+        
+        db.session.add(promo)
+        db.session.commit()
+        flash(f'Promo code "{code}" created successfully!', 'success')
+        return redirect(url_for('admin_promo_codes'))
+    
+    products = Product.query.all()
+    return render_template('admin_promo_form.html', promo=None, products=products)
+
+@app.route('/admin/promo-codes/<int:promo_id>/toggle', methods=['POST'])
+@login_required
+def admin_toggle_promo(promo_id):
+    if not session.get('is_admin'):
+        flash('Unauthorized access', 'error')
+        return redirect(url_for('index'))
+    
+    promo = PromoCode.query.get_or_404(promo_id)
+    promo.is_active = not promo.is_active
+    db.session.commit()
+    status = "activated" if promo.is_active else "deactivated"
+    flash(f'Promo code "{promo.code}" {status}!', 'success')
+    return redirect(url_for('admin_promo_codes'))
+
+@app.route('/admin/promo-codes/<int:promo_id>/delete', methods=['POST'])
+@login_required
+def admin_delete_promo(promo_id):
+    if not session.get('is_admin'):
+        flash('Unauthorized access', 'error')
+        return redirect(url_for('index'))
+    
+    promo = PromoCode.query.get_or_404(promo_id)
+    db.session.delete(promo)
+    db.session.commit()
+    flash(f'Promo code "{promo.code}" deleted!', 'success')
+    return redirect(url_for('admin_promo_codes'))
+
 @app.route('/admin/logout')
 @login_required
 def admin_logout():
@@ -361,6 +504,7 @@ def checkout():
         last_name = request.form['last_name']
         email = request.form['email']
         phone = request.form.get('phone', '')
+        payment_method = request.form.get('payment_method', 'cod')
         
         full_name = f"{first_name} {last_name}"
         
@@ -370,6 +514,7 @@ def checkout():
             customer_email=email,
             customer_phone=phone,
             total_amount=total,
+            payment_method=payment_method,
             shipping_address=shipping_address
         )
         db.session.add(order)

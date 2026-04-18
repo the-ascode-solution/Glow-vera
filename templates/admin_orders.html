@@ -165,6 +165,18 @@
                         <a href="{{ url_for('admin_orders') }}" class="nav-link active">
                             <i class="fas fa-shopping-cart me-2"></i>Orders
                         </a>
+                        <a href="{{ url_for('admin_promo_codes') }}" class="nav-link">
+                            <i class="fas fa-tags me-2"></i>Promo Codes
+                        </a>
+                        <hr class="my-3 bg-white-50">
+                        <div class="px-3 mb-2">
+                            <small class="text-white-50">Currency</small>
+                            <select class="form-select form-select-sm mt-1" onchange="window.location.href='/set_currency/'+this.value" style="background-color: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.3);">
+                                {% for code, info in currencies.items() %}
+                                <option value="{{ code }}" {{ 'selected' if current_currency == code }} style="color: #333;">{{ info.symbol }} {{ code }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
                         <hr class="my-3 bg-white-50">
                         <a href="{{ url_for('index') }}" class="nav-link">
                             <i class="fas fa-store me-2"></i>View Store
