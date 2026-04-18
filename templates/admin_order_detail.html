@@ -337,9 +337,9 @@
                     
                     <!-- Action Buttons -->
                     <div class="d-flex gap-3">
-                        <button class="btn btn-outline-primary" onclick="window.print()">
-                            <i class="fas fa-print me-2"></i>Print Order
-                        </button>
+                        <a href="{{ url_for('admin_order_invoice', order_id=order.id) }}" target="_blank" class="btn btn-outline-primary">
+                            <i class="fas fa-print me-2"></i>Print Invoice
+                        </a>
                         <button class="btn btn-outline-secondary" onclick="window.location.href='mailto:{{ order.customer_email }}?subject=Order #{{ order.id }} Update'">
                             <i class="fas fa-envelope me-2"></i>Email Customer
                         </button>

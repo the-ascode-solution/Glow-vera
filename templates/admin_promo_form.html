@@ -180,6 +180,9 @@
                                                        step="0.01" min="0" required placeholder="e.g. 10">
                                                 <span class="input-group-text" id="discountSuffix">%</span>
                                             </div>
+                                            <small class="text-muted" id="currencyNote" style="display: none;">
+                                                <i class="fas fa-info-circle me-1"></i>Enter amount in <strong>{{ currencies[current_currency].name }} ({{ current_currency }})</strong>. It will be automatically converted for other currencies.
+                                            </small>
                                         </div>
                                     </div>
                                     
@@ -262,7 +265,14 @@
         // Update discount suffix based on type
         document.getElementById('discount_type').addEventListener('change', function() {
             const suffix = document.getElementById('discountSuffix');
-            suffix.textContent = this.value === 'percentage' ? '%' : '{{ currencies[current_currency].symbol }}';
+            const currencyNote = document.getElementById('currencyNote');
+            if (this.value === 'percentage') {
+                suffix.textContent = '%';
+                currencyNote.style.display = 'none';
+            } else {
+                suffix.textContent = '{{ currencies[current_currency].symbol }} {{ current_currency }}';
+                currencyNote.style.display = 'block';
+            }
             updatePreview();
         });
         

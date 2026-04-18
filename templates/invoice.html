@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invoice #{{ order.id }} - Glowvera Naturals</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Poppins', sans-serif;
+            color: #333;
+            background: #f0f0f0;
+        }
+
+        .invoice-wrapper {
+            max-width: 800px;
+            margin: 20px auto;
+            background: white;
+            padding: 50px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+
+        /* ── Header ── */
+        .invoice-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding-bottom: 30px;
+            border-bottom: 3px solid #2E7D32;
+        }
+        .brand h1 {
+            font-size: 1.8rem;
+            color: #2E7D32;
+            margin-bottom: 4px;
+        }
+        .brand p {
+            font-size: 0.8rem;
+            color: #777;
+        }
+        .invoice-title {
+            text-align: right;
+        }
+        .invoice-title h2 {
+            font-size: 2rem;
+            color: #2E7D32;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            font-weight: 700;
+        }
+        .invoice-title p {
+            font-size: 0.85rem;
+            color: #777;
+            margin-top: 4px;
+        }
+
+        /* ── Info Grid ── */
+        .invoice-info {
+            display: flex;
+            justify-content: space-between;
+            margin: 30px 0;
+            gap: 20px;
+        }
+        .info-block h4 {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: #2E7D32;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+        .info-block p {
+            font-size: 0.85rem;
+            line-height: 1.7;
+            color: #555;
+        }
+        .info-block strong {
+            color: #333;
+        }
+
+        /* ── Table ── */
+        .invoice-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 30px 0;
+        }
+        .invoice-table thead th {
+            background: #2E7D32;
+            color: white;
+            padding: 12px 16px;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+            text-align: left;
+        }
+        .invoice-table thead th:last-child,
+        .invoice-table thead th:nth-child(3),
+        .invoice-table thead th:nth-child(4) {
+            text-align: right;
+        }
+        .invoice-table tbody td {
+            padding: 14px 16px;
+            font-size: 0.85rem;
+            border-bottom: 1px solid #eee;
+            color: #555;
+        }
+        .invoice-table tbody td:last-child,
+        .invoice-table tbody td:nth-child(3),
+        .invoice-table tbody td:nth-child(4) {
+            text-align: right;
+        }
+        .invoice-table tbody tr:nth-child(even) {
+            background: #fafafa;
+        }
+        .product-name {
+            font-weight: 600;
+            color: #333;
+        }
+        .product-category {
+            font-size: 0.75rem;
+            color: #999;
+        }
+
+        /* ── Totals ── */
+        .invoice-totals {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 10px;
+        }
+        .totals-box {
+            width: 300px;
+        }
+        .totals-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            font-size: 0.85rem;
+            color: #555;
+        }
+        .totals-row.total {
+            border-top: 2px solid #2E7D32;
+            margin-top: 8px;
+            padding-top: 12px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #2E7D32;
+        }
+
+        /* ── Payment ── */
+        .payment-info {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8fdf8;
+            border: 1px solid #c8e6c9;
+            border-radius: 8px;
+        }
+        .payment-info h4 {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: #2E7D32;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+        .payment-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        .badge-cod { background: #e8f5e9; color: #2e7d32; }
+        .badge-half { background: #fff8e1; color: #f57f17; }
+        .badge-full { background: #e3f2fd; color: #1565c0; }
+
+        /* ── Footer ── */
+        .invoice-footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            text-align: center;
+        }
+        .invoice-footer p {
+            font-size: 0.75rem;
+            color: #999;
+            line-height: 1.8;
+        }
+        .thank-you {
+            font-size: 1.1rem;
+            color: #2E7D32;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        /* ── Print Button (hidden on print) ── */
+        .print-actions {
+            text-align: center;
+            margin: 20px auto;
+            max-width: 800px;
+        }
+        .btn-print {
+            background: #2E7D32;
+            color: white;
+            border: none;
+            padding: 12px 40px;
+            border-radius: 25px;
+            font-family: 'Poppins', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin: 0 8px;
+            transition: all 0.3s ease;
+        }
+        .btn-print:hover {
+            background: #1b5e20;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(46,125,50,0.3);
+        }
+        .btn-back {
+            background: #666;
+        }
+        .btn-back:hover {
+            background: #444;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        /* ── Print Styles ── */
+        @media print {
+            body { background: white; }
+            .invoice-wrapper {
+                margin: 0;
+                padding: 20px;
+                box-shadow: none;
+                max-width: 100%;
+            }
+            .print-actions { display: none !important; }
+            .invoice-table thead th { 
+                background: #2E7D32 !important; 
+                color: white !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            .invoice-table tbody tr:nth-child(even) {
+                background: #fafafa !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            .payment-info {
+                background: #f8fdf8 !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Print Actions -->
+    <div class="print-actions">
+        <button class="btn-print" onclick="window.print()">🖨️ Print Invoice</button>
+        <button class="btn-print btn-back" onclick="window.close()">← Close</button>
+    </div>
+
+    <div class="invoice-wrapper">
+        <!-- Header -->
+        <div class="invoice-header">
+            <div class="brand">
+                <h1>🌿 Glowvera Naturals</h1>
+                <p>Pure Organic Beauty & Healthcare</p>
+                <p>info@glowvera.com | +1 (555) 123-4567</p>
+            </div>
+            <div class="invoice-title">
+                <h2>Invoice</h2>
+                <p><strong>INV-{{ '%05d' | format(order.id) }}</strong></p>
+                <p>{{ order.created_at.strftime('%B %d, %Y') }}</p>
+            </div>
+        </div>
+
+        <!-- Info Grid -->
+        <div class="invoice-info">
+            <div class="info-block">
+                <h4>Bill To</h4>
+                <p>
+                    <strong>{{ order.customer_name }}</strong><br>
+                    {{ order.customer_email }}<br>
+                    {% if order.customer_phone %}{{ order.customer_phone }}<br>{% endif %}
+                </p>
+            </div>
+            <div class="info-block">
+                <h4>Ship To</h4>
+                <p>{{ order.shipping_address }}</p>
+            </div>
+            <div class="info-block" style="text-align: right;">
+                <h4>Order Details</h4>
+                <p>
+                    <strong>Order #:</strong> {{ order.id }}<br>
+                    <strong>Date:</strong> {{ order.created_at.strftime('%m/%d/%Y') }}<br>
+                    <strong>Status:</strong> {{ order.status.title() }}
+                </p>
+            </div>
+        </div>
+
+        <!-- Items Table -->
+        <table class="invoice-table">
+            <thead>
+                <tr>
+                    <th style="width: 5%;">#</th>
+                    <th style="width: 45%;">Product</th>
+                    <th style="width: 15%;">Unit Price</th>
+                    <th style="width: 10%;">Qty</th>
+                    <th style="width: 25%;">Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in order.order_items %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td>
+                        <span class="product-name">{{ item.product.name }}</span><br>
+                        <span class="product-category">{{ item.product.category }}</span>
+                    </td>
+                    <td>{{ format_price(item.price) }}</td>
+                    <td style="text-align: center;">{{ item.quantity }}</td>
+                    <td>{{ format_price(item.price * item.quantity) }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <!-- Totals -->
+        <div class="invoice-totals">
+            <div class="totals-box">
+                <div class="totals-row">
+                    <span>Subtotal</span>
+                    <span>{{ format_price(order.total_amount) }}</span>
+                </div>
+                <div class="totals-row">
+                    <span>Shipping</span>
+                    <span>{{ format_price(0) }}</span>
+                </div>
+                <div class="totals-row">
+                    <span>Tax</span>
+                    <span>{{ format_price(0) }}</span>
+                </div>
+                <div class="totals-row total">
+                    <span>Total</span>
+                    <span>{{ format_price(order.total_amount) }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Payment Method -->
+        <div class="payment-info">
+            <h4>Payment Method</h4>
+            {% if order.payment_method == 'cod' %}
+                <span class="payment-badge badge-cod">💵 Cash on Delivery</span>
+            {% elif order.payment_method == 'half_advance' %}
+                <span class="payment-badge badge-half">🤝 50% Advance + 50% After Delivery</span>
+            {% elif order.payment_method == 'full_advance' %}
+                <span class="payment-badge badge-full">🏦 Full Advance Payment</span>
+            {% else %}
+                <span class="payment-badge">{{ order.payment_method }}</span>
+            {% endif %}
+        </div>
+
+        <!-- Footer -->
+        <div class="invoice-footer">
+            <p class="thank-you">Thank you for shopping with Glowvera Naturals! 🌿</p>
+            <p>
+                This is a computer-generated invoice and does not require a signature.<br>
+                For questions or returns, please contact us at info@glowvera.com<br>
+                © {{ order.created_at.strftime('%Y') }} Glowvera Naturals — Pure Organic Beauty
+            </p>
+        </div>
+    </div>
+
+</body>
+</html>

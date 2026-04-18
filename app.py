@@ -376,6 +376,33 @@ def admin_order_detail(order_id):
     order = Order.query.get_or_404(order_id)
     return render_template('admin_order_detail.html', order=order)
 
+@app.route('/admin/order/<int:order_id>/update_status', methods=['POST'])
+@login_required
+def update_order_status(order_id):
+    if not session.get('is_admin'):
+        flash('Unauthorized access', 'error')
+        return redirect(url_for('index'))
+    
+    order = Order.query.get_or_404(order_id)
+    new_status = request.form.get('new_status')
+    if new_status in ['pending', 'processing', 'shipped', 'delivered']:
+        order.status = new_status
+        db.session.commit()
+        flash(f'Order #{order.id} status updated to {new_status.title()}!', 'success')
+    else:
+        flash('Invalid status', 'error')
+    return redirect(url_for('admin_order_detail', order_id=order.id))
+
+@app.route('/admin/order/<int:order_id>/invoice')
+@login_required
+def admin_order_invoice(order_id):
+    if not session.get('is_admin'):
+        flash('Unauthorized access', 'error')
+        return redirect(url_for('index'))
+    
+    order = Order.query.get_or_404(order_id)
+    return render_template('invoice.html', order=order)
+
 @app.route('/admin/promo-codes')
 @login_required
 def admin_promo_codes():
