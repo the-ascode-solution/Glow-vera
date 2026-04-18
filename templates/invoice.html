@@ -334,11 +334,11 @@
             <div class="totals-box">
                 <div class="totals-row">
                     <span>Subtotal</span>
-                    <span>{{ format_price(order.total_amount - (order.tax_amount or 0)) }}</span>
+                    <span>{{ format_price(order.total_amount - (order.tax_amount or 0) - (order.shipping_fee or 0)) }}</span>
                 </div>
                 <div class="totals-row">
                     <span>Shipping</span>
-                    <span>{{ format_price(0) }}</span>
+                    <span>{{ format_price(order.shipping_fee or 0) }}</span>
                 </div>
                 <div class="totals-row">
                     <span>Tax ({{ (order.tax_rate or 0) * 100 | int }}%)</span>

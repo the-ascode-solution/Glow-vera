@@ -145,26 +145,42 @@
                 
                 <hr>
                 
-                <div class="d-flex justify-content-between mb-3">
+                <div class="mb-4">
+                    <label class="form-label small">Promo Code</label>
+                    <div class="input-group">
+                        <input type="text" class="form-control form-control-sm" id="promoCodeInput" name="promo_code" placeholder="Enter code" autocomplete="off">
+                        <button class="btn btn-outline-success btn-sm" type="button" id="applyPromoBtn">Apply</button>
+                    </div>
+                    <div id="promoMessage" class="small mt-1" style="display: none;"></div>
+                </div>
+
+                <hr>
+                
+                <div class="d-flex justify-content-between mb-2">
                     <span>Subtotal:</span>
                     <span>{{ format_price(total) }}</span>
                 </div>
                 
-                <div class="d-flex justify-content-between mb-3">
+                <div class="d-flex justify-content-between mb-2">
                     <span>Shipping:</span>
-                    <span>{{ format_price(0) }}</span>
+                    <span id="shippingDisplay">{{ format_price(shipping_fee) }}</span>
                 </div>
                 
-                <div class="d-flex justify-content-between mb-3">
-                    <span>Tax <small class="text-muted" id="taxRateLabel">(8%)</small>:</span>
+                <div class="d-flex justify-content-between mb-2">
+                    <span id="taxRateLabelContainer">Tax <span class="text-muted small" id="taxRateLabel">(8%)</span>:</span>
                     <span id="taxAmount">{{ format_price(total * 0.08) }}</span>
+                </div>
+
+                <div class="d-flex justify-content-between mb-2 text-success" id="discountRow" style="display: none !important;">
+                    <span>Discount:</span>
+                    <span id="discountAmountDisplay">-Rs 0</span>
                 </div>
                 
                 <hr>
                 
                 <div class="d-flex justify-content-between mb-4">
                     <strong>Total:</strong>
-                    <strong class="product-price" id="grandTotal">{{ format_price(total + (total * 0.08)) }}</strong>
+                    <strong class="product-price" id="grandTotal">{{ format_price(total + (total * 0.08) + shipping_fee) }}</strong>
                 </div>
                 
                 <!-- Security Badge -->
@@ -182,42 +198,108 @@
 
 {% block extra_js %}
 <script>
-    const subtotal = {{ total }};
-    const currencyCode = '{{ current_currency }}';
-    const currencyRate = {{ currencies[current_currency].rate }};
-    const currencySymbol = '{{ currencies[current_currency].symbol }}';
+    const subtotal = parseFloat('{{ total }}');
+    const currencySymbol = 'Rs';
 
-    const taxRateCod = {{ tax_rate_cod }};
-    const taxRateAdvance = {{ tax_rate_advance }};
+    const taxRateCod = parseFloat('{{ tax_rate_cod }}');
+    const taxRateAdvance = parseFloat('{{ tax_rate_advance }}');
+    const shippingFee = parseFloat('{{ shipping_fee }}');
 
-    function formatLocalPrice(usdAmount) {
-        const converted = usdAmount * currencyRate;
-        if (currencyCode === 'PKR') {
-            return currencySymbol + ' ' + Math.round(converted).toLocaleString();
-        }
-        return currencySymbol + converted.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    function formatLocalPrice(amount) {
+        return currencySymbol + ' ' + Math.round(amount).toLocaleString();
     }
+
+    let appliedDiscount = 0;
+    let promoType = null;
 
     function updateTax() {
-        const selected = document.querySelector('input[name="payment_method"]:checked');
-        const ratePercent = selected && selected.value === 'cod' ? taxRateCod : taxRateAdvance;
-        const rate = ratePercent / 100.0;
-        const rateLabel = ratePercent + '%';
+        const paymentMethod = document.querySelector('input[name="payment_method"]:checked').value;
+        const rate = (paymentMethod === 'cod') ? taxRateCod : taxRateAdvance;
+        const taxVal = subtotal * (rate / 100);
         
-        const tax = subtotal * rate;
-        const grandTotal = subtotal + tax;
+        document.getElementById('taxRateLabel').textContent = '(' + rate + '%)';
+        document.getElementById('taxAmount').textContent = formatLocalPrice(taxVal);
         
-        document.getElementById('taxRateLabel').textContent = '(' + rateLabel + ')';
-        document.getElementById('taxAmount').textContent = formatLocalPrice(tax);
-        document.getElementById('grandTotal').textContent = formatLocalPrice(grandTotal);
+        let currentShipping = shippingFee;
+        if (promoType === 'free_shipping') {
+            currentShipping = 0;
+            document.getElementById('shippingDisplay').textContent = 'FREE';
+        } else {
+            document.getElementById('shippingDisplay').textContent = formatLocalPrice(shippingFee);
+        }
+
+        const grand = subtotal + taxVal + currentShipping - (promoType !== 'free_shipping' ? appliedDiscount : 0);
+        document.getElementById('grandTotal').textContent = formatLocalPrice(grand);
     }
 
-    // Listen for payment method changes
     document.querySelectorAll('input[name="payment_method"]').forEach(radio => {
         radio.addEventListener('change', updateTax);
     });
 
-    // Initialize on page load
+    // Promo Code Logic
+    const applyPromoBtn = document.getElementById('applyPromoBtn');
+    const promoCodeInput = document.getElementById('promoCodeInput');
+    const promoMessage = document.getElementById('promoMessage');
+    const discountRow = document.getElementById('discountRow');
+    const discountAmountDisplay = document.getElementById('discountAmountDisplay');
+
+    applyPromoBtn.addEventListener('click', async function() {
+        const code = promoCodeInput.value.trim();
+        if (!code) return;
+
+        applyPromoBtn.disabled = true;
+        applyPromoBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+
+        try {
+            const response = await fetch('/apply-promo', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    code: code,
+                    subtotal: subtotal,
+                    shipping_fee: shippingFee
+                })
+            });
+
+            const result = await response.json();
+            
+            promoMessage.style.display = 'block';
+            if (result.success) {
+                promoMessage.className = 'small mt-1 text-success';
+                promoMessage.textContent = result.message;
+                
+                appliedDiscount = result.discount_amount;
+                promoType = result.discount_type;
+                
+                if (promoType === 'free_shipping') {
+                    discountRow.style.setProperty('display', 'none', 'important');
+                } else {
+                    discountRow.style.setProperty('display', 'flex', 'important');
+                    discountAmountDisplay.textContent = '- ' + formatLocalPrice(appliedDiscount);
+                }
+                
+                updateTax();
+            } else {
+                promoMessage.className = 'small mt-1 text-danger';
+                promoMessage.textContent = result.message;
+                
+                appliedDiscount = 0;
+                promoType = null;
+                discountRow.style.setProperty('display', 'none', 'important');
+                updateTax();
+            }
+        } catch (error) {
+            console.error('Promo error:', error);
+            promoMessage.style.display = 'block';
+            promoMessage.className = 'small mt-1 text-danger';
+            promoMessage.textContent = 'Error applying promo code.';
+        } finally {
+            applyPromoBtn.disabled = false;
+            applyPromoBtn.textContent = 'Apply';
+        }
+    });
+
+    // Initial tax calculation
     updateTax();
 </script>
 {% endblock %}

@@ -172,15 +172,6 @@
                             <i class="fas fa-cog me-2"></i>Settings
                         </a>
                         <hr class="my-3 bg-white-50">
-                        <div class="px-3 mb-2">
-                            <small class="text-white-50">Currency</small>
-                            <select class="form-select form-select-sm mt-1" onchange="window.location.href='/set_currency/'+this.value" style="background-color: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.3);">
-                                {% for code, info in currencies.items() %}
-                                <option value="{{ code }}" {{ 'selected' if current_currency == code }} style="color: #333;">{{ info.symbol }} {{ code }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <hr class="my-3 bg-white-50">
                         <a href="{{ url_for('index') }}" class="nav-link">
                             <i class="fas fa-store me-2"></i>View Store
                         </a>
@@ -238,7 +229,7 @@
                                 </div>
                                 <div class="col-md-6 text-end">
                                     <div class="order-total">
-                                        Total: ${{ "%.2f"|format(order.total_amount) }}
+                                        Total: {{ format_price(order.total_amount) }}
                                     </div>
                                 </div>
                             </div>
@@ -269,7 +260,7 @@
                             <div class="product-item">
                                 <div class="row align-items-center">
                                     <div class="col-md-2">
-                                        <img src="{{ item.product.image_url or 'https://via.placeholder.com/80x80/90EE90/FFFFFF?text=Product' }}" 
+                                        <img src="{{ item.product.image_url or 'https://placehold.co/80x80/90EE90/FFFFFF?text=Product' }}" 
                                              alt="{{ item.product.name }}" 
                                              class="product-image">
                                     </div>
@@ -282,10 +273,10 @@
                                     </div>
                                     <div class="col-md-2 text-center">
                                         <p class="mb-0"><strong>Qty:</strong> {{ item.quantity }}</p>
-                                        <p class="mb-0 text-muted">${{ "%.2f"|format(item.price) }} each</p>
+                                        <p class="mb-0 text-muted">{{ format_price(item.price) }} each</p>
                                     </div>
                                     <div class="col-md-2 text-end">
-                                        <h6 class="mb-0">${{ "%.2f"|format(item.price * item.quantity) }}</h6>
+                                        <h6 class="mb-0">{{ format_price(item.price * item.quantity) }}</h6>
                                     </div>
                                 </div>
                             </div>
@@ -299,11 +290,11 @@
                                 <div class="status-actions">
                                     <div class="d-flex justify-content-between mb-2">
                                         <span>Subtotal:</span>
-                                        <span>{{ format_price(order.total_amount - (order.tax_amount or 0)) }}</span>
+                                        <span>{{ format_price(order.total_amount - (order.tax_amount or 0) - (order.shipping_fee or 0)) }}</span>
                                     </div>
                                     <div class="d-flex justify-content-between mb-2">
                                         <span>Shipping:</span>
-                                        <span>{{ format_price(0) }}</span>
+                                        <span>{{ format_price(order.shipping_fee or 0) }}</span>
                                     </div>
                                     <div class="d-flex justify-content-between mb-2">
                                         <span>Tax ({{ (order.tax_rate or 0) * 100 | int }}%):</span>

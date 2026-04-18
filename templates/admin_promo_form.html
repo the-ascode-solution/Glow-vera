@@ -102,15 +102,6 @@
                             <i class="fas fa-cog me-2"></i>Settings
                         </a>
                         <hr class="my-3 bg-white-50">
-                        <div class="px-3 mb-2">
-                            <small class="text-white-50">Currency</small>
-                            <select class="form-select form-select-sm mt-1" onchange="window.location.href='/set_currency/'+this.value" style="background-color: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.3);">
-                                {% for code, info in currencies.items() %}
-                                <option value="{{ code }}" {{ 'selected' if current_currency == code }} style="color: #333;">{{ info.symbol }} {{ code }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <hr class="my-3 bg-white-50">
                         <a href="{{ url_for('index') }}" class="nav-link">
                             <i class="fas fa-store me-2"></i>View Store
                         </a>
@@ -174,17 +165,18 @@
                                             <select class="form-select" id="discount_type" name="discount_type" required>
                                                 <option value="percentage">Percentage (%)</option>
                                                 <option value="fixed">Fixed Amount</option>
+                                                <option value="free_shipping">Free Delivery</option>
                                             </select>
                                         </div>
-                                        <div class="col-md-6 mb-3">
+                                        <div class="col-md-6 mb-3" id="discountValueContainer">
                                             <label for="discount_value" class="form-label">Discount Value *</label>
                                             <div class="input-group">
                                                 <input type="number" class="form-control" id="discount_value" name="discount_value" 
-                                                       step="0.01" min="0" required placeholder="e.g. 10">
+                                                       step="0.01" min="0" value="0" placeholder="e.g. 10">
                                                 <span class="input-group-text" id="discountSuffix">%</span>
                                             </div>
                                             <small class="text-muted" id="currencyNote" style="display: none;">
-                                                <i class="fas fa-info-circle me-1"></i>Enter amount in <strong>{{ currencies[current_currency].name }} ({{ current_currency }})</strong>. It will be automatically converted for other currencies.
+                                                <i class="fas fa-info-circle me-1"></i>Enter amount in <strong>Pakistani Rupee (PKR)</strong>.
                                             </small>
                                         </div>
                                     </div>
@@ -269,12 +261,19 @@
         document.getElementById('discount_type').addEventListener('change', function() {
             const suffix = document.getElementById('discountSuffix');
             const currencyNote = document.getElementById('currencyNote');
+            const valueContainer = document.getElementById('discountValueContainer');
+            
             if (this.value === 'percentage') {
                 suffix.textContent = '%';
                 currencyNote.style.display = 'none';
-            } else {
-                suffix.textContent = '{{ currencies[current_currency].symbol }} {{ current_currency }}';
+                valueContainer.style.display = 'block';
+            } else if (this.value === 'fixed') {
+                suffix.textContent = 'Rs PKR';
                 currencyNote.style.display = 'block';
+                valueContainer.style.display = 'block';
+            } else {
+                valueContainer.style.display = 'none';
+                currencyNote.style.display = 'none';
             }
             updatePreview();
         });
@@ -293,9 +292,15 @@
         function updatePreview() {
             const type = document.getElementById('discount_type').value;
             const value = document.getElementById('discount_value').value;
+            
+            if (type === 'free_shipping') {
+                document.getElementById('previewDiscount').textContent = 'FREE DELIVERY';
+                return;
+            }
+
             if (value) {
                 document.getElementById('previewDiscount').textContent = 
-                    type === 'percentage' ? value + '% OFF' : '{{ currencies[current_currency].symbol }}' + value + ' OFF';
+                    type === 'percentage' ? value + '% OFF' : 'Rs ' + value + ' OFF';
             } else {
                 document.getElementById('previewDiscount').textContent = '—';
             }

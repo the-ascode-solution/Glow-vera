@@ -21,33 +21,18 @@ db = SQLAlchemy(app)
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-# Currency Configuration
-CURRENCIES = {
-    'USD': {'rate': 1.0, 'symbol': '$', 'name': 'US Dollar'},
-    'PKR': {'rate': 278.0, 'symbol': 'Rs', 'name': 'Pakistani Rupee'},
-    'EUR': {'rate': 0.94, 'symbol': '€', 'name': 'Euro'},
-    'AUD': {'rate': 1.54, 'symbol': 'A$', 'name': 'Australian Dollar'},
-    'CAD': {'rate': 1.37, 'symbol': 'C$', 'name': 'Canadian Dollar'}
-}
+# Currency Configuration - Set to PKR Native
+NATIVE_CURRENCY = {'symbol': 'Rs', 'name': 'Pakistani Rupee'}
 
 @app.context_processor
 def utility_processor():
     def format_price(price):
         if not price:
             price = 0
-        currency_code = session.get('currency', 'USD')
-        if currency_code not in CURRENCIES:
-            currency_code = 'USD'
-        
-        rate = CURRENCIES[currency_code]['rate']
-        symbol = CURRENCIES[currency_code]['symbol']
-        converted_price = float(price) * rate
-        
-        if currency_code == 'PKR':
-            return f"{symbol} {int(converted_price):,}"
-        return f"{symbol}{converted_price:,.2f}"
+        symbol = NATIVE_CURRENCY['symbol']
+        return f"{symbol} {int(price):,}"
     
-    return dict(format_price=format_price, currencies=CURRENCIES, current_currency=session.get('currency', 'USD'))
+    return dict(format_price=format_price, currency=NATIVE_CURRENCY)
 
 @app.template_filter('nl2br')
 def nl2br_filter(s):
@@ -58,15 +43,6 @@ def nl2br_filter(s):
 @app.route('/favicon.ico')
 def favicon():
     return '', 204
-
-@app.route('/set_currency/<currency_code>')
-def set_currency(currency_code):
-    if currency_code in CURRENCIES:
-        session['currency'] = currency_code
-    
-    # Redirect back to the previous page or index
-    next_page = request.args.get('next') or request.referrer or url_for('index')
-    return redirect(next_page)
 
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -108,9 +84,12 @@ class Order(db.Model):
     total_amount = db.Column(db.Float, nullable=False)
     tax_rate = db.Column(db.Float, default=0.08)
     tax_amount = db.Column(db.Float, default=0.0)
+    shipping_fee = db.Column(db.Float, default=0.0)
     status = db.Column(db.String(20), default='pending')
     payment_method = db.Column(db.String(30), default='cod')
     shipping_address = db.Column(db.Text, nullable=False)
+    discount_amount = db.Column(db.Float, default=0.0)
+    promo_code = db.Column(db.String(50))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     order_items = db.relationship('OrderItem', backref='order', lazy=True)
@@ -134,8 +113,8 @@ class PromoCode(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     code = db.Column(db.String(50), unique=True, nullable=False)
     name = db.Column(db.String(100), nullable=False)
-    discount_type = db.Column(db.String(20), nullable=False)  # 'percentage' or 'fixed'
-    discount_value = db.Column(db.Float, nullable=False)
+    discount_type = db.Column(db.String(25), nullable=False)  # 'percentage', 'fixed', or 'free_shipping'
+    discount_value = db.Column(db.Float, default=0.0)
     applies_to = db.Column(db.String(20), default='all')  # 'all' or 'specific'
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -288,7 +267,7 @@ def admin_add_product():
         return redirect(url_for('index'))
     
     if request.method == 'POST':
-        image_url = request.form['image_url']
+        image_url = url_for('static', filename='images/logo.jpeg')
         if 'image_file' in request.files:
             file = request.files['image_file']
             if file and allowed_file(file.filename):
@@ -326,7 +305,7 @@ def admin_edit_product(product_id):
     product = Product.query.get_or_404(product_id)
     
     if request.method == 'POST':
-        image_url = request.form['image_url']
+        image_url = product.image_url
         if 'image_file' in request.files:
             file = request.files['image_file']
             if file and allowed_file(file.filename):
@@ -508,6 +487,7 @@ def admin_settings():
     if request.method == 'POST':
         tax_cod = request.form.get('tax_cod', '8')
         tax_advance = request.form.get('tax_advance', '5')
+        shipping_fee = request.form.get('shipping_fee', '0')
         
         # Save to DB
         setting_cod = SystemSetting.query.filter_by(setting_key='tax_cod').first()
@@ -522,6 +502,12 @@ def admin_settings():
             db.session.add(setting_advance)
         setting_advance.setting_value = tax_advance
         
+        setting_shipping = SystemSetting.query.filter_by(setting_key='shipping_fee').first()
+        if not setting_shipping:
+            setting_shipping = SystemSetting(setting_key='shipping_fee')
+            db.session.add(setting_shipping)
+        setting_shipping.setting_value = shipping_fee
+        
         db.session.commit()
         flash('Settings updated successfully!', 'success')
         return redirect(url_for('admin_settings'))
@@ -533,7 +519,10 @@ def admin_settings():
     setting_advance = SystemSetting.query.filter_by(setting_key='tax_advance').first()
     tax_advance = setting_advance.setting_value if setting_advance else '5'
     
-    return render_template('admin_settings.html', tax_cod=tax_cod, tax_advance=tax_advance)
+    setting_shipping = SystemSetting.query.filter_by(setting_key='shipping_fee').first()
+    shipping_fee = setting_shipping.setting_value if setting_shipping else '0'
+    
+    return render_template('admin_settings.html', tax_cod=tax_cod, tax_advance=tax_advance, shipping_fee=shipping_fee)
 
 @app.route('/admin/logout')
 @login_required
@@ -585,10 +574,40 @@ def checkout():
         setting_advance = SystemSetting.query.filter_by(setting_key='tax_advance').first()
         tax_rate_advance = float(setting_advance.setting_value) / 100.0 if setting_advance else 0.05
         
-        # Calculate tax
+        # Get shipping fee
+        setting_shipping = SystemSetting.query.filter_by(setting_key='shipping_fee').first()
+        shipping_fee = float(setting_shipping.setting_value) if setting_shipping else 0.0
+        
+        # Get Promo Code
+        promo_code_str = request.form.get('promo_code', '').strip().upper()
+        discount_amount = 0.0
+        applied_promo = None
+        promo = None
+        
+        if promo_code_str:
+            promo = PromoCode.query.filter_by(code=promo_code_str, is_active=True).first()
+            if promo:
+                if promo.discount_type == 'percentage':
+                    discount_amount = total * (promo.discount_value / 100.0)
+                elif promo.discount_type == 'fixed':
+                    discount_amount = promo.discount_value
+                elif promo.discount_type == 'free_shipping':
+                    discount_amount = shipping_fee
+                    shipping_fee = 0.0
+                
+                applied_promo = promo.code
+
+        # Calculate tax and total
         tax_rate = tax_rate_cod if payment_method == 'cod' else tax_rate_advance
         tax_amount = total * tax_rate
-        grand_total = total + tax_amount
+        
+        # Cap discount to subtotal
+        if discount_amount > total:
+            discount_amount = total
+            
+        grand_total = total + tax_amount + shipping_fee
+        if promo and promo.discount_type != 'free_shipping':
+            grand_total -= discount_amount
         
         full_name = f"{first_name} {last_name}"
         
@@ -600,6 +619,9 @@ def checkout():
             total_amount=grand_total,
             tax_rate=tax_rate,
             tax_amount=tax_amount,
+            shipping_fee=shipping_fee,
+            discount_amount=discount_amount,
+            promo_code=applied_promo,
             payment_method=payment_method,
             shipping_address=shipping_address
         )
@@ -628,7 +650,40 @@ def checkout():
     setting_advance = SystemSetting.query.filter_by(setting_key='tax_advance').first()
     tax_rate_advance = float(setting_advance.setting_value) if setting_advance else 5.0
     
-    return render_template('checkout.html', cart_items=cart_items, total=total, tax_rate_cod=tax_rate_cod, tax_rate_advance=tax_rate_advance)
+    setting_shipping = SystemSetting.query.filter_by(setting_key='shipping_fee').first()
+    shipping_fee = float(setting_shipping.setting_value) if setting_shipping else 0.0
+    
+    return render_template('checkout.html', cart_items=cart_items, total=total, tax_rate_cod=tax_rate_cod, tax_rate_advance=tax_rate_advance, shipping_fee=shipping_fee)
+
+@app.route('/apply-promo', methods=['POST'])
+def apply_promo():
+    data = request.get_json()
+    code_str = data.get('code', '').strip().upper()
+    subtotal = data.get('subtotal', 0)
+    shipping_fee = data.get('shipping_fee', 0)
+    
+    promo = PromoCode.query.filter_by(code=code_str, is_active=True).first()
+    
+    if not promo:
+        return {'success': False, 'message': 'Invalid or expired promo code'}
+    
+    discount_amount = 0
+    message = f"Promo '{promo.name}' applied!"
+    
+    if promo.discount_type == 'percentage':
+        discount_amount = subtotal * (promo.discount_value / 100.0)
+    elif promo.discount_type == 'fixed':
+        discount_amount = promo.discount_value
+    elif promo.discount_type == 'free_shipping':
+        discount_amount = shipping_fee
+        
+    return {
+        'success': True,
+        'message': message,
+        'discount_amount': discount_amount,
+        'discount_type': promo.discount_type,
+        'promo_code': promo.code
+    }
 
 @app.route('/order_confirmation/<int:order_id>')
 def order_confirmation(order_id):

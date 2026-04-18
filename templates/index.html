@@ -65,12 +65,11 @@
             {% for product in featured_products %}
             <div class="col-lg-4 col-md-6 mb-4">
                 <div class="product-card h-100">
-                    <img src="{{ product.image_url }}" alt="{{ product.name }}" class="product-image w-100"
-                     onerror="this.src='https://via.placeholder.com/300x300/E8F5E8/2E7D32?text=Image+Not+Available'">
+                    <img src="{{ product.image_url }}" alt="{{ product.name }}" class="product-image w-100"https://placehold.co/300x300/E8F5E8/2E7D32?text=Image+Not+Available'">
                     <div class="card-body p-4">
-                        <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div class="mb-2">
+                            <span class="category-badge d-inline-block mb-2">{{ product.category }}</span>
                             <h5 class="product-title">{{ product.name }}</h5>
-                            <span class="category-badge">{{ product.category }}</span>
                         </div>
                         <p class="text-muted mb-3">{{ product.description[:100] }}...</p>
                         <div class="d-flex justify-content-between align-items-center">
