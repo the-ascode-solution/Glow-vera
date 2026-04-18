@@ -106,6 +106,8 @@ class Order(db.Model):
     customer_email = db.Column(db.String(120), nullable=False)
     customer_phone = db.Column(db.String(20))
     total_amount = db.Column(db.Float, nullable=False)
+    tax_rate = db.Column(db.Float, default=0.08)
+    tax_amount = db.Column(db.Float, default=0.0)
     status = db.Column(db.String(20), default='pending')
     payment_method = db.Column(db.String(30), default='cod')
     shipping_address = db.Column(db.Text, nullable=False)
@@ -139,6 +141,12 @@ class PromoCode(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     products = db.relationship('Product', secondary=promo_products, backref='promo_codes')
+
+class SystemSetting(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    setting_key = db.Column(db.String(50), unique=True, nullable=False)
+    setting_value = db.Column(db.String(255), nullable=False)
+
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -490,6 +498,43 @@ def admin_delete_promo(promo_id):
     flash(f'Promo code "{promo.code}" deleted!', 'success')
     return redirect(url_for('admin_promo_codes'))
 
+@app.route('/admin/settings', methods=['GET', 'POST'])
+@login_required
+def admin_settings():
+    if not session.get('is_admin'):
+        flash('Unauthorized access', 'error')
+        return redirect(url_for('index'))
+    
+    if request.method == 'POST':
+        tax_cod = request.form.get('tax_cod', '8')
+        tax_advance = request.form.get('tax_advance', '5')
+        
+        # Save to DB
+        setting_cod = SystemSetting.query.filter_by(setting_key='tax_cod').first()
+        if not setting_cod:
+            setting_cod = SystemSetting(setting_key='tax_cod')
+            db.session.add(setting_cod)
+        setting_cod.setting_value = tax_cod
+        
+        setting_advance = SystemSetting.query.filter_by(setting_key='tax_advance').first()
+        if not setting_advance:
+            setting_advance = SystemSetting(setting_key='tax_advance')
+            db.session.add(setting_advance)
+        setting_advance.setting_value = tax_advance
+        
+        db.session.commit()
+        flash('Settings updated successfully!', 'success')
+        return redirect(url_for('admin_settings'))
+    
+    # Get current settings
+    setting_cod = SystemSetting.query.filter_by(setting_key='tax_cod').first()
+    tax_cod = setting_cod.setting_value if setting_cod else '8'
+    
+    setting_advance = SystemSetting.query.filter_by(setting_key='tax_advance').first()
+    tax_advance = setting_advance.setting_value if setting_advance else '5'
+    
+    return render_template('admin_settings.html', tax_cod=tax_cod, tax_advance=tax_advance)
+
 @app.route('/admin/logout')
 @login_required
 def admin_logout():
@@ -533,6 +578,18 @@ def checkout():
         phone = request.form.get('phone', '')
         payment_method = request.form.get('payment_method', 'cod')
         
+        # Get tax rates from settings
+        setting_cod = SystemSetting.query.filter_by(setting_key='tax_cod').first()
+        tax_rate_cod = float(setting_cod.setting_value) / 100.0 if setting_cod else 0.08
+        
+        setting_advance = SystemSetting.query.filter_by(setting_key='tax_advance').first()
+        tax_rate_advance = float(setting_advance.setting_value) / 100.0 if setting_advance else 0.05
+        
+        # Calculate tax
+        tax_rate = tax_rate_cod if payment_method == 'cod' else tax_rate_advance
+        tax_amount = total * tax_rate
+        grand_total = total + tax_amount
+        
         full_name = f"{first_name} {last_name}"
         
         order = Order(
@@ -540,7 +597,9 @@ def checkout():
             customer_name=full_name,
             customer_email=email,
             customer_phone=phone,
-            total_amount=total,
+            total_amount=grand_total,
+            tax_rate=tax_rate,
+            tax_amount=tax_amount,
             payment_method=payment_method,
             shipping_address=shipping_address
         )
@@ -562,7 +621,14 @@ def checkout():
         flash('Order placed successfully!', 'success')
         return redirect(url_for('order_confirmation', order_id=order.id))
     
-    return render_template('checkout.html', cart_items=cart_items, total=total)
+    # Pass tax rates to template for JS calculation
+    setting_cod = SystemSetting.query.filter_by(setting_key='tax_cod').first()
+    tax_rate_cod = float(setting_cod.setting_value) if setting_cod else 8.0
+    
+    setting_advance = SystemSetting.query.filter_by(setting_key='tax_advance').first()
+    tax_rate_advance = float(setting_advance.setting_value) if setting_advance else 5.0
+    
+    return render_template('checkout.html', cart_items=cart_items, total=total, tax_rate_cod=tax_rate_cod, tax_rate_advance=tax_rate_advance)
 
 @app.route('/order_confirmation/<int:order_id>')
 def order_confirmation(order_id):

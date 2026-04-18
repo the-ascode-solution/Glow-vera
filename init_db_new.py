@@ -116,8 +116,14 @@ def init_database():
         for product in products:
             db.session.add(product)
         
+        # Add default System Settings
+        from app import SystemSetting
+        db.session.add(SystemSetting(setting_key='tax_cod', setting_value='8'))
+        db.session.add(SystemSetting(setting_key='tax_advance', setting_value='5'))
+        
         db.session.commit()
-        print("Database initialized with admin user and sample products!")
+        print("Database initialized with admin user, sample products, and default settings!")
+
 
 if __name__ == '__main__':
     init_database()

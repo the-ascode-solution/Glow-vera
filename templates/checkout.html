@@ -127,7 +127,7 @@
         
         <!-- Order Summary -->
         <div class="col-lg-4">
-            <div class="order-summary sticky-top" style="top: 100px;">
+            <div class="order-summary sticky-top" style="top: 100px;" data-subtotal="{{ total }}">
                 <h5 class="mb-4">Order Summary</h5>
                 
                 <!-- Cart Items -->
@@ -152,19 +152,19 @@
                 
                 <div class="d-flex justify-content-between mb-3">
                     <span>Shipping:</span>
-                    <span>{{ format_price(5.99) }}</span>
+                    <span>{{ format_price(0) }}</span>
                 </div>
                 
                 <div class="d-flex justify-content-between mb-3">
-                    <span>Tax:</span>
-                    <span>{{ format_price(total * 0.08) }}</span>
+                    <span>Tax <small class="text-muted" id="taxRateLabel">(8%)</small>:</span>
+                    <span id="taxAmount">{{ format_price(total * 0.08) }}</span>
                 </div>
                 
                 <hr>
                 
                 <div class="d-flex justify-content-between mb-4">
                     <strong>Total:</strong>
-                    <strong class="product-price">{{ format_price(total + 5.99 + (total * 0.08)) }}</strong>
+                    <strong class="product-price" id="grandTotal">{{ format_price(total + (total * 0.08)) }}</strong>
                 </div>
                 
                 <!-- Security Badge -->
@@ -178,4 +178,46 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const subtotal = {{ total }};
+    const currencyCode = '{{ current_currency }}';
+    const currencyRate = {{ currencies[current_currency].rate }};
+    const currencySymbol = '{{ currencies[current_currency].symbol }}';
+
+    const taxRateCod = {{ tax_rate_cod }};
+    const taxRateAdvance = {{ tax_rate_advance }};
+
+    function formatLocalPrice(usdAmount) {
+        const converted = usdAmount * currencyRate;
+        if (currencyCode === 'PKR') {
+            return currencySymbol + ' ' + Math.round(converted).toLocaleString();
+        }
+        return currencySymbol + converted.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    }
+
+    function updateTax() {
+        const selected = document.querySelector('input[name="payment_method"]:checked');
+        const ratePercent = selected && selected.value === 'cod' ? taxRateCod : taxRateAdvance;
+        const rate = ratePercent / 100.0;
+        const rateLabel = ratePercent + '%';
+        
+        const tax = subtotal * rate;
+        const grandTotal = subtotal + tax;
+        
+        document.getElementById('taxRateLabel').textContent = '(' + rateLabel + ')';
+        document.getElementById('taxAmount').textContent = formatLocalPrice(tax);
+        document.getElementById('grandTotal').textContent = formatLocalPrice(grandTotal);
+    }
+
+    // Listen for payment method changes
+    document.querySelectorAll('input[name="payment_method"]').forEach(radio => {
+        radio.addEventListener('change', updateTax);
+    });
+
+    // Initialize on page load
+    updateTax();
+</script>
 {% endblock %}
