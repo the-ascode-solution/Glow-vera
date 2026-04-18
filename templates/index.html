@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-section">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-6">
+                <h1 class="hero-title">Pure Beauty from Nature</h1>
+                <p class="hero-subtitle">Discover our handcrafted organic skincare and haircare products made with love from the finest natural ingredients.</p>
+                <div class="d-flex gap-3">
+                    <a href="{{ url_for('products') }}" class="btn btn-primary btn-lg">Shop Now</a>
+                    <a href="#about" class="btn btn-outline-primary btn-lg">Learn More</a>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="position-relative">
+                    <i class="fas fa-leaf nature-decoration leaf-decoration"></i>
+                    <i class="fas fa-spa nature-decoration flower-decoration"></i>
+                    <img src="https://via.placeholder.com/500x400/90EE90/FFFFFF?text=Natural+Beauty+Products" 
+                         alt="Natural Beauty Products" 
+                         class="img-fluid rounded-3 shadow-lg">
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Features Section -->
+<section class="py-5">
+    <div class="container">
+        <div class="row text-center">
+            <div class="col-md-4 mb-4">
+                <div class="feature-card p-4">
+                    <i class="fas fa-leaf nature-icon"></i>
+                    <h4 class="mb-3">100% Organic</h4>
+                    <p class="text-muted">All our products are made from certified organic ingredients, free from harmful chemicals.</p>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="feature-card p-4">
+                    <i class="fas fa-hand-holding-heart nature-icon"></i>
+                    <h4 class="mb-3">Handcrafted</h4>
+                    <p class="text-muted">Each product is carefully handmade in small batches to ensure the highest quality.</p>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="feature-card p-4">
+                    <i class="fas fa-seedling nature-icon"></i>
+                    <h4 class="mb-3">Eco-Friendly</h4>
+                    <p class="text-muted">We use sustainable packaging and environmentally friendly practices.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Featured Products -->
+<section class="featured-section">
+    <div class="container">
+        <h2 class="section-title">Featured Products</h2>
+        <p class="section-subtitle">Discover our most loved organic beauty essentials</p>
+        
+        <div class="row">
+            {% for product in featured_products %}
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="product-card h-100">
+                    <img src="{{ product.image_url }}" alt="{{ product.name }}" class="product-image w-100"
+                     onerror="this.src='https://via.placeholder.com/300x300/E8F5E8/2E7D32?text=Image+Not+Available'">
+                    <div class="card-body p-4">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h5 class="product-title">{{ product.name }}</h5>
+                            <span class="category-badge">{{ product.category }}</span>
+                        </div>
+                        <p class="text-muted mb-3">{{ product.description[:100] }}...</p>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="product-price">{{ format_price(product.price) }}</span>
+                            <a href="{{ url_for('product_detail', product_id=product.id) }}" 
+                               class="btn btn-outline-primary btn-sm">View Details</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <div class="text-center mt-4">
+            <a href="{{ url_for('products') }}" class="btn btn-primary btn-lg">View All Products</a>
+        </div>
+    </div>
+</section>
+
+<!-- About Section -->
+<section id="about" class="about-section">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-6">
+                <img src="https://via.placeholder.com/500x400/81C784/FFFFFF?text=Our+Story" 
+                     alt="About Glowvera Naturals" 
+                     class="img-fluid rounded-3 shadow">
+            </div>
+            <div class="col-lg-6">
+                <h2 class="section-title text-start">Our Story</h2>
+                <div class="about-content">
+                    <p class="mb-3">Welcome to Glowvera Naturals, where nature's finest ingredients meet artisanal craftsmanship. Born from a passion for pure, organic skincare, we create products that nourish your body while respecting our planet.</p>
+                    
+                    <p class="mb-3">Our journey began with a simple belief: what you put on your body should be as pure and natural as what you put in it. We carefully source certified organic ingredients from sustainable farms, ensuring every product delivers the healing power of nature.</p>
+                    
+                    <p>From our refreshing aloe vera soaps to our luxurious argan hair oils, each product is handcrafted in small batches with love and intention. We invite you to experience the difference that pure, organic ingredients can make in your daily self-care routine.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Categories Preview -->
+<section class="py-5">
+    <div class="container">
+        <h2 class="section-title">Shop by Category</h2>
+        <div class="row">
+            <div class="col-md-3 col-6 mb-4">
+                <div class="category-card text-center p-4 border rounded-3 h-100">
+                    <i class="fas fa-soap fa-3x text-primary mb-3"></i>
+                    <h5>Organic Soaps</h5>
+                    <p class="text-muted small">Gentle cleansing bars</p>
+                </div>
+            </div>
+            <div class="col-md-3 col-6 mb-4">
+                <div class="category-card text-center p-4 border rounded-3 h-100">
+                    <i class="fas fa-spa fa-3x text-success mb-3"></i>
+                    <h5>Face Care</h5>
+                    <p class="text-muted small">Nourishing face washes</p>
+                </div>
+            </div>
+            <div class="col-md-3 col-6 mb-4">
+                <div class="category-card text-center p-4 border rounded-3 h-100">
+                    <i class="fas fa-water fa-3x text-info mb-3"></i>
+                    <h5>Shampoos</h5>
+                    <p class="text-muted small">Natural hair cleansing</p>
+                </div>
+            </div>
+            <div class="col-md-3 col-6 mb-4">
+                <div class="category-card text-center p-4 border rounded-3 h-100">
+                    <i class="fas fa-droplet fa-3x text-warning mb-3"></i>
+                    <h5>Hair Oils</h5>
+                    <p class="text-muted small">Nourishing treatments</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
