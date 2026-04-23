@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-5 text-center">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <h1 class="display-1 text-danger">500</h1>
+            <h2 class="mb-4">System Error</h2>
+            <p class="lead text-muted mb-5">Something went wrong on our end. Our team has been notified.</p>
+            <a href="{{ url_for('index') }}" class="btn btn-primary btn-lg">Back to Home</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

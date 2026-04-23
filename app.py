@@ -1,22 +1,64 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, session
 from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from datetime import datetime
 import os
+from flask_wtf.csrf import CSRFProtect
+from dotenv import load_dotenv
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+import logging
+from logging.handlers import RotatingFileHandler
+
+# Load environment variables
+load_dotenv()
+
+basedir = os.path.abspath(os.path.dirname(__file__))
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'glowvera_naturals_secret_key_2024'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///glowvera.db'
+
+# Production Logging setup (must be early to capture startup issues)
+if not app.debug:
+    if not os.path.exists('logs'):
+        os.mkdir('logs')
+    file_handler = RotatingFileHandler('logs/glowvera.log', maxBytes=10240, backupCount=10)
+    file_handler.setFormatter(logging.Formatter(
+        '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
+    ))
+    file_handler.setLevel(logging.INFO)
+    app.logger.addHandler(file_handler)
+    app.logger.setLevel(logging.INFO)
+    app.logger.info('Glow-Vera startup')
+
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'default_secret_key_for_dev_only')
+if not app.debug and app.config['SECRET_KEY'] == 'default_secret_key_for_dev_only':
+    app.logger.warning("Running with default SECRET_KEY! This is insecure for production.")
+# Use absolute path for SQLite to avoid issues on shared hosting
+default_db_path = f"sqlite:///{os.path.join(basedir, 'instance', 'glowvera.db')}"
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('SQLALCHEMY_DATABASE_URI', default_db_path)
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-UPLOAD_FOLDER = os.path.join(app.root_path, 'static', 'images', 'products')
+# Enable CSRF Protection
+csrf = CSRFProtect(app)
+
+# Rate Limiting setup
+limiter = Limiter(
+    get_remote_address,
+    app=app,
+    default_limits=["200 per day", "50 per hour"],
+    storage_uri="memory://",
+)
+
+UPLOAD_FOLDER = os.path.join(basedir, 'static', 'images', 'products')
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 db = SQLAlchemy(app)
+migrate = Migrate(app, db)
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -140,6 +182,26 @@ class ContactMessage(db.Model):
 def load_user(user_id):
     return User.query.get(int(user_id))
 
+from functools import wraps
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated or not current_user.is_admin:
+            flash('Unauthorized access. Admin privileges required.', 'error')
+            return redirect(url_for('index'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+# Add Security Headers
+@app.after_request
+def add_security_headers(response):
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-Frame-Options'] = 'SAMEORIGIN'
+    response.headers['X-XSS-Protection'] = '1; mode=block'
+    if not app.debug:
+        response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+    return response
+
 @app.route('/')
 def index():
     featured_products = Product.query.filter_by(is_featured=True).limit(6).all()
@@ -188,22 +250,14 @@ def contact():
     return render_template('contact.html')
 
 @app.route('/admin/messages')
-@login_required
+@admin_required
 def admin_messages():
-    if not session.get('is_admin'):
-        flash('Unauthorized access', 'error')
-        return redirect(url_for('index'))
-    
     messages = ContactMessage.query.order_by(ContactMessage.created_at.desc()).all()
     return render_template('admin_messages.html', messages=messages)
 
 @app.route('/admin/message/<int:msg_id>/delete', methods=['POST'])
-@login_required
+@admin_required
 def admin_delete_message(msg_id):
-    if not session.get('is_admin'):
-        flash('Unauthorized access', 'error')
-        return redirect(url_for('index'))
-    
     msg = ContactMessage.query.get_or_404(msg_id)
     db.session.delete(msg)
     db.session.commit()
@@ -269,6 +323,7 @@ def update_cart(product_id):
     return redirect(url_for('cart'))
 
 @app.route('/login', methods=['GET', 'POST'])
+@limiter.limit("10 per minute")
 def login():
     if request.method == 'POST':
         email = request.form['email']
@@ -283,6 +338,41 @@ def login():
             flash('Invalid email or password', 'error')
     
     return render_template('login.html')
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if current_user.is_authenticated:
+        return redirect(url_for('index'))
+        
+    if request.method == 'POST':
+        username = request.form.get('username')
+        email = request.form.get('email')
+        password = request.form.get('password')
+        first_name = request.form.get('first_name')
+        last_name = request.form.get('last_name')
+        
+        # Validation
+        if User.query.filter_by(email=email).first():
+            flash('Email already registered', 'error')
+            return redirect(url_for('register'))
+        if User.query.filter_by(username=username).first():
+            flash('Username already taken', 'error')
+            return redirect(url_for('register'))
+            
+        new_user = User(
+            username=username,
+            email=email,
+            password_hash=generate_password_hash(password),
+            first_name=first_name,
+            last_name=last_name
+        )
+        db.session.add(new_user)
+        db.session.commit()
+        
+        flash('Registration successful! Please login.', 'success')
+        return redirect(url_for('login'))
+        
+    return render_template('register.html')
 
 @app.route('/admin', methods=['GET', 'POST'])
 def admin_login():
@@ -302,12 +392,8 @@ def admin_login():
     return render_template('admin_login.html')
 
 @app.route('/admin/dashboard')
-@login_required
+@admin_required
 def admin_dashboard():
-    if not session.get('is_admin'):
-        flash('Unauthorized access', 'error')
-        return redirect(url_for('index'))
-    
     total_products = Product.query.count()
     total_orders = Order.query.count()
     total_messages = ContactMessage.query.count()
@@ -322,22 +408,14 @@ def admin_dashboard():
                          low_stock_products=low_stock_products)
 
 @app.route('/admin/products')
-@login_required
+@admin_required
 def admin_products():
-    if not session.get('is_admin'):
-        flash('Unauthorized access', 'error')
-        return redirect(url_for('index'))
-    
     products = Product.query.order_by(Product.created_at.desc()).all()
     return render_template('admin_products.html', products=products)
 
 @app.route('/admin/product/new', methods=['GET', 'POST'])
-@login_required
+@admin_required
 def admin_add_product():
-    if not session.get('is_admin'):
-        flash('Unauthorized access', 'error')
-        return redirect(url_for('index'))
-    
     if request.method == 'POST':
         image_url = url_for('static', filename='images/logo.jpeg')
         if 'image_file' in request.files:
@@ -368,12 +446,8 @@ def admin_add_product():
     return render_template('admin_product_form.html', product=None)
 
 @app.route('/admin/product/<int:product_id>/edit', methods=['GET', 'POST'])
-@login_required
+@admin_required
 def admin_edit_product(product_id):
-    if not session.get('is_admin'):
-        flash('Unauthorized access', 'error')
-        return redirect(url_for('index'))
-    
     product = Product.query.get_or_404(product_id)
     
     if request.method == 'POST':
@@ -403,12 +477,8 @@ def admin_edit_product(product_id):
     return render_template('admin_product_form.html', product=product)
 
 @app.route('/admin/product/<int:product_id>/delete', methods=['POST'])
-@login_required
+@admin_required
 def admin_delete_product(product_id):
-    if not session.get('is_admin'):
-        flash('Unauthorized access', 'error')
-        return redirect(url_for('index'))
-    
     product = Product.query.get_or_404(product_id)
     db.session.delete(product)
     db.session.commit()
@@ -416,32 +486,20 @@ def admin_delete_product(product_id):
     return redirect(url_for('admin_products'))
 
 @app.route('/admin/orders')
-@login_required
+@admin_required
 def admin_orders():
-    if not session.get('is_admin'):
-        flash('Unauthorized access', 'error')
-        return redirect(url_for('index'))
-    
     orders = Order.query.order_by(Order.created_at.desc()).all()
     return render_template('admin_orders.html', orders=orders)
 
 @app.route('/admin/order/<int:order_id>')
-@login_required
+@admin_required
 def admin_order_detail(order_id):
-    if not session.get('is_admin'):
-        flash('Unauthorized access', 'error')
-        return redirect(url_for('index'))
-    
     order = Order.query.get_or_404(order_id)
     return render_template('admin_order_detail.html', order=order)
 
 @app.route('/admin/order/<int:order_id>/update_status', methods=['POST'])
-@login_required
+@admin_required
 def update_order_status(order_id):
-    if not session.get('is_admin'):
-        flash('Unauthorized access', 'error')
-        return redirect(url_for('index'))
-    
     order = Order.query.get_or_404(order_id)
     new_status = request.form.get('new_status')
     if new_status in ['pending', 'processing', 'shipped', 'delivered']:
@@ -453,32 +511,20 @@ def update_order_status(order_id):
     return redirect(url_for('admin_order_detail', order_id=order.id))
 
 @app.route('/admin/order/<int:order_id>/invoice')
-@login_required
+@admin_required
 def admin_order_invoice(order_id):
-    if not session.get('is_admin'):
-        flash('Unauthorized access', 'error')
-        return redirect(url_for('index'))
-    
     order = Order.query.get_or_404(order_id)
     return render_template('invoice.html', order=order)
 
 @app.route('/admin/promo-codes')
-@login_required
+@admin_required
 def admin_promo_codes():
-    if not session.get('is_admin'):
-        flash('Unauthorized access', 'error')
-        return redirect(url_for('index'))
-    
     promos = PromoCode.query.order_by(PromoCode.created_at.desc()).all()
     return render_template('admin_promo_codes.html', promos=promos)
 
 @app.route('/admin/promo-codes/new', methods=['GET', 'POST'])
-@login_required
+@admin_required
 def admin_add_promo():
-    if not session.get('is_admin'):
-        flash('Unauthorized access', 'error')
-        return redirect(url_for('index'))
-    
     if request.method == 'POST':
         code = request.form['code'].strip().upper()
         name = request.form['name'].strip()
@@ -517,12 +563,8 @@ def admin_add_promo():
     return render_template('admin_promo_form.html', promo=None, products=products)
 
 @app.route('/admin/promo-codes/<int:promo_id>/toggle', methods=['POST'])
-@login_required
+@admin_required
 def admin_toggle_promo(promo_id):
-    if not session.get('is_admin'):
-        flash('Unauthorized access', 'error')
-        return redirect(url_for('index'))
-    
     promo = PromoCode.query.get_or_404(promo_id)
     promo.is_active = not promo.is_active
     db.session.commit()
@@ -531,12 +573,8 @@ def admin_toggle_promo(promo_id):
     return redirect(url_for('admin_promo_codes'))
 
 @app.route('/admin/promo-codes/<int:promo_id>/delete', methods=['POST'])
-@login_required
+@admin_required
 def admin_delete_promo(promo_id):
-    if not session.get('is_admin'):
-        flash('Unauthorized access', 'error')
-        return redirect(url_for('index'))
-    
     promo = PromoCode.query.get_or_404(promo_id)
     db.session.delete(promo)
     db.session.commit()
@@ -544,12 +582,8 @@ def admin_delete_promo(promo_id):
     return redirect(url_for('admin_promo_codes'))
 
 @app.route('/admin/settings', methods=['GET', 'POST'])
-@login_required
+@admin_required
 def admin_settings():
-    if not session.get('is_admin'):
-        flash('Unauthorized access', 'error')
-        return redirect(url_for('index'))
-    
     if request.method == 'POST':
         tax_cod = request.form.get('tax_cod', '8')
         tax_advance = request.form.get('tax_advance', '5')
@@ -591,7 +625,7 @@ def admin_settings():
     return render_template('admin_settings.html', tax_cod=tax_cod, tax_advance=tax_advance, shipping_fee=shipping_fee)
 
 @app.route('/admin/logout')
-@login_required
+@admin_required
 def admin_logout():
     session.pop('is_admin', None)
     logout_user()
@@ -607,6 +641,7 @@ def logout():
     return redirect(url_for('index'))
 
 @app.route('/checkout', methods=['GET', 'POST'])
+@limiter.limit("5 per minute")
 def checkout():
     cart = session.get('cart', {})
     if not cart:
@@ -696,13 +731,19 @@ def checkout():
         
         for product_id, quantity in cart.items():
             product = Product.query.get(int(product_id))
-            order_item = OrderItem(
-                order_id=order.id,
-                product_id=product_id,
-                quantity=quantity,
-                price=product.price
-            )
-            db.session.add(order_item)
+            if product:
+                # Decrement stock
+                product.stock_quantity -= quantity
+                if product.stock_quantity < 0:
+                    product.stock_quantity = 0
+                    
+                order_item = OrderItem(
+                    order_id=order.id,
+                    product_id=product_id,
+                    quantity=quantity,
+                    price=product.price
+                )
+                db.session.add(order_item)
         
         db.session.commit()
         session['cart'] = {}
@@ -757,7 +798,19 @@ def order_confirmation(order_id):
     # Basic check to prevent easy enumeration of orders, although guest checkout is public
     return render_template('order_confirmation.html', order=order)
 
+# Error Handlers
+@app.errorhandler(404)
+def page_not_found(e):
+    return render_template('404.html'), 404
+
+@app.errorhandler(500)
+def internal_server_error(e):
+    return render_template('500.html'), 500
+
+# Production Logging (Already set up at top)
+
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
-    app.run(debug=True)
+    debug_mode = os.getenv('DEBUG', 'False').lower() == 'true'
+    app.run(debug=debug_mode)

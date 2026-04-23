@@ -3,8 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Glowvera Naturals - Premium Organic Beauty & Healthcare products curated from nature's finest ingredients.">
+    <meta name="keywords" content="organic beauty, natural skincare, glowvera, organic healthcare, nature beauty">
     <title>{% block title %}Glowvera Naturals - Pure Organic Beauty{% endblock %}</title>
     <link rel="icon" href="{{ url_for('favicon') }}" type="image/x-icon">
+    <!-- Meta for CSRF token for AJAX -->
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -47,22 +52,31 @@
                         <a class="nav-link position-relative" href="{{ url_for('cart') }}">
                             <i class="fas fa-shopping-cart"></i>
                             {% if session.get('cart') %}
-                                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-success">
+                                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-success" style="font-size: 0.6rem;">
                                     {{ session.get('cart')|length }}
                                 </span>
                             {% endif %}
                         </a>
                     </li>
-                    {% if current_user.is_authenticated and session.get('is_admin') %}
+                    {% if current_user.is_authenticated %}
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                                <i class="fas fa-user-shield"></i> {{ current_user.first_name }} (Admin)
+                                <i class="fas fa-user-circle"></i> {{ current_user.first_name }}
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end">
-                                <li><a class="dropdown-item" href="{{ url_for('admin_dashboard') }}">Dashboard</a></li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item" href="{{ url_for('admin_logout') }}">Logout</a></li>
+                                {% if session.get('is_admin') %}
+                                    <li><a class="dropdown-item" href="{{ url_for('admin_dashboard') }}"><i class="fas fa-tachometer-alt me-2"></i>Admin Panel</a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                {% endif %}
+                                <li><a class="dropdown-item" href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
                             </ul>
+                        </li>
+                    {% else %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('login') }}">Login</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="btn btn-success btn-sm ms-lg-2 mt-2 mt-lg-0" href="{{ url_for('register') }}">Register</a>
                         </li>
                     {% endif %}
                 </ul>
@@ -113,7 +127,7 @@
                 <div class="col-md-4">
                     <h5 class="mb-3">Contact Info</h5>
                     <p class="text-white-50">
-                        <i class="fas fa-envelope me-2"></i> info@glowvera.com<br>
+                        <i class="fas fa-envelope me-2"></i> info@glowvernaturals.com<br>
                         <i class="fas fa-phone me-2"></i> +1 (555) 123-4567<br>
                         <i class="fas fa-map-marker-alt me-2"></i> 123 Nature Lane, Green Valley
                     </p>
@@ -133,6 +147,13 @@
     </a>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Setup CSRF token for all AJAX requests
+        document.addEventListener('DOMContentLoaded', function() {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            window.csrfToken = csrfToken;
+        });
+    </script>
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
     {% block extra_js %}{% endblock %}
 </body>

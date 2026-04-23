@@ -67,6 +67,7 @@
                 <div class="contact-form-container p-5 rounded-4 shadow-sm bg-white">
                     <h3 class="mb-4">Send us a Message</h3>
                     <form action="{{ url_for('contact') }}" method="POST" id="contactForm">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <label for="name" class="form-label">Full Name</label>

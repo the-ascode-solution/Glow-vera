@@ -12,6 +12,7 @@
         <!-- Checkout Form -->
         <div class="col-lg-8">
             <form method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <!-- Shipping Information -->
                 <div class="card mb-4">
                     <div class="card-header bg-light">
@@ -253,7 +254,10 @@
         try {
             const response = await fetch('/apply-promo', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token() }}'
+                },
                 body: JSON.stringify({
                     code: code,
                     subtotal: subtotal,
