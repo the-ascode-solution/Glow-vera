@@ -1,6 +1,6 @@
 # 🌿 Glowvera Naturals E-commerce Platform
 
-**Official Domain**: [glowvernaturals.com](https://glowvernaturals.com)
+**Official Domain**: [glowveranaturals.com](https://glowveranaturals.com)
 
 A modern, high-performance e-commerce solution for **Glowvera Naturals**, specialized in premium organic beauty products. Featuring a robust admin dashboard, dynamic checkout with localized tax/shipping logic, and a stunning nature-inspired UI.
 
@@ -13,7 +13,7 @@ This project is configured for automated deployment to **SymbolHost cPanel** via
 ### Deployment Workflow
 1. **Push to Main**: Any push to the `main` branch triggers the GitHub Action.
 2. **Automated Build**: GitHub installs dependencies and runs basic checks.
-3. **Secure Transfer**: Code is synced to `~/apps/glowvernaturals` on the server.
+3. **Secure Transfer**: Code is synced to `~/apps/glowveranaturals` on the server.
 4. **Auto-Update**: The server automatically runs database migrations (`flask db upgrade`) and restarts the Python Passenger process.
 
 ### Environment Secrets
