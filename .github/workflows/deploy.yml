@@ -10,10 +10,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: 🚚 Get latest code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: 🐍 Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: '3.11'
 
@@ -22,42 +22,47 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
 
+    - name: 📦 Package Application
+      run: |
+        tar -czf deploy.tar.gz app.py requirements.txt static templates migrations passenger_wsgi.py wsgi.py
+
     - name: 🚚 Deploy to Server (SCP)
-      uses: appleboy/scp-action@master
+      uses: appleboy/scp-action@v0.1.7
       with:
         host: ${{ secrets.SSH_HOST }}
         username: ${{ secrets.SSH_USER }}
         key: ${{ secrets.SSH_KEY }}
-        source: "app.py,requirements.txt,static,templates,migrations,passenger_wsgi.py"
+        source: "deploy.tar.gz"
         target: "~/apps/glowveranaturals"
-        rm: false
 
     - name: 🛠️ Post-deployment Commands
-      uses: appleboy/ssh-action@master
+      uses: appleboy/ssh-action@v0.1.10
       with:
         host: ${{ secrets.SSH_HOST }}
         username: ${{ secrets.SSH_USER }}
         key: ${{ secrets.SSH_KEY }}
         script: |
           cd ~/apps/glowveranaturals
+          # Extract and cleanup
+          tar -xzf deploy.tar.gz
+          rm deploy.tar.gz
+          
           # Update .env from secrets
           echo "${{ secrets.PROD_ENV }}" > .env
           
           # Install/Update dependencies in virtualenv
-          # We'll try to find the virtualenv based on cPanel's standard structure
-          # Usually: ~/virtualenv/apps/glowveranaturals/3.11/bin/activate
           if [ -d "~/virtualenv/apps/glowveranaturals/3.11" ]; then
             source ~/virtualenv/apps/glowveranaturals/3.11/bin/activate
             export FLASK_APP=app.py
             python -m pip install --upgrade pip
             python -m pip install -r requirements.txt
-            # Run migrations
             python -m flask db upgrade
           else
-            echo "Warning: Virtualenv not found at standard path. Please check cPanel Setup Python App."
+            echo "Warning: Virtualenv not found. Please check cPanel Setup Python App."
           fi
           
-          # Restart the app (Passenger standard)
+          # Restart the app
           mkdir -p tmp
           touch tmp/restart.txt
+
 
