@@ -120,6 +120,41 @@
         </div>
     </div>
     
+    <!-- Product Reviews -->
+    {% if product_reviews %}
+    <div class="mt-5">
+        <h3 class="section-title text-center mb-4">Customer Reviews</h3>
+        <div class="row">
+            {% for review in product_reviews %}
+            <div class="col-lg-6 mb-4">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body p-4">
+                        <div class="d-flex justify-content-between mb-3">
+                            <div class="text-warning">
+                                {% for i in range(review.rating) %}
+                                <i class="fas fa-star"></i>
+                                {% endfor %}
+                                {% for i in range(5 - review.rating) %}
+                                <i class="far fa-star"></i>
+                                {% endfor %}
+                            </div>
+                            <small class="text-muted">{{ review.review_date.strftime('%B %d, %Y') }}</small>
+                        </div>
+                        <p class="card-text mb-3">{{ review.review_text }}</p>
+                        <div class="d-flex align-items-center">
+                            <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                                <span class="fw-bold small">{{ review.reviewer_name[0] }}</span>
+                            </div>
+                            <strong>{{ review.reviewer_name }}</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+    
     <!-- Related Products -->
     <div class="mt-5">
         <h3 class="section-title text-center mb-4">You May Also Like</h3>

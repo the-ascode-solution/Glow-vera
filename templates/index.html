@@ -112,6 +112,45 @@
     </div>
 </section>
 
+<!-- Testimonials Section -->
+{% if visible_reviews %}
+<section class="py-5 bg-light">
+    <div class="container">
+        <h2 class="section-title">What Our Customers Say</h2>
+        <p class="section-subtitle">Real reviews from our happy customers</p>
+        
+        <div class="row">
+            {% for review in visible_reviews %}
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body p-4">
+                        <div class="text-warning mb-3">
+                            {% for i in range(review.rating) %}
+                            <i class="fas fa-star"></i>
+                            {% endfor %}
+                            {% for i in range(5 - review.rating) %}
+                            <i class="far fa-star"></i>
+                            {% endfor %}
+                        </div>
+                        <p class="card-text fst-italic mb-3">"{{ review.review_text }}"</p>
+                        <div class="d-flex align-items-center">
+                            <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px;">
+                                <span class="fw-bold">{{ review.reviewer_name[0] }}</span>
+                            </div>
+                            <div>
+                                <h6 class="mb-0">{{ review.reviewer_name }}</h6>
+                                <small class="text-muted">{{ review.review_date.strftime('%B %d, %Y') }}</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
+
 <!-- Categories Preview -->
 <section class="py-5">
     <div class="container">

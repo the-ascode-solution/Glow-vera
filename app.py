@@ -178,6 +178,18 @@ class ContactMessage(db.Model):
     status = db.Column(db.String(20), default='new')  # 'new', 'read', 'replied'
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+class Review(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    reviewer_name = db.Column(db.String(100), nullable=False)
+    rating = db.Column(db.Integer, nullable=False)  # 1-5 stars
+    review_text = db.Column(db.Text, nullable=False)
+    review_date = db.Column(db.DateTime, nullable=False)  # Manually set by admin
+    product_id = db.Column(db.Integer, db.ForeignKey('product.id'), nullable=True)  # Optional product link
+    is_visible = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    product = db.relationship('Product', backref='reviews')
+
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
@@ -205,7 +217,8 @@ def add_security_headers(response):
 @app.route('/')
 def index():
     featured_products = Product.query.filter_by(is_featured=True).limit(6).all()
-    return render_template('index.html', featured_products=featured_products)
+    visible_reviews = Review.query.filter_by(is_visible=True).order_by(Review.review_date.desc()).limit(6).all()
+    return render_template('index.html', featured_products=featured_products, visible_reviews=visible_reviews)
 
 @app.route('/products')
 def products():
@@ -221,7 +234,8 @@ def products():
 @app.route('/product/<int:product_id>')
 def product_detail(product_id):
     product = Product.query.get_or_404(product_id)
-    return render_template('product_detail.html', product=product)
+    product_reviews = Review.query.filter_by(product_id=product_id, is_visible=True).order_by(Review.review_date.desc()).all()
+    return render_template('product_detail.html', product=product, product_reviews=product_reviews)
 
 @app.route('/about')
 def about():
@@ -623,6 +637,94 @@ def admin_settings():
     shipping_fee = setting_shipping.setting_value if setting_shipping else '0'
     
     return render_template('admin_settings.html', tax_cod=tax_cod, tax_advance=tax_advance, shipping_fee=shipping_fee)
+
+@app.route('/admin/reviews')
+@admin_required
+def admin_reviews():
+    reviews = Review.query.order_by(Review.review_date.desc()).all()
+    return render_template('admin_reviews.html', reviews=reviews)
+
+@app.route('/admin/reviews/new', methods=['GET', 'POST'])
+@admin_required
+def admin_add_review():
+    if request.method == 'POST':
+        reviewer_name = request.form.get('reviewer_name')
+        rating = int(request.form.get('rating'))
+        review_text = request.form.get('review_text')
+        review_date_str = request.form.get('review_date')
+        product_id = request.form.get('product_id')
+        is_visible = 'is_visible' in request.form
+        
+        # Parse the datetime-local input
+        try:
+            review_date = datetime.fromisoformat(review_date_str)
+        except ValueError:
+            # Fallback for different formats
+            review_date = datetime.strptime(review_date_str, '%Y-%m-%dT%H:%M')
+        
+        review = Review(
+            reviewer_name=reviewer_name,
+            rating=rating,
+            review_text=review_text,
+            review_date=review_date,
+            product_id=int(product_id) if product_id else None,
+            is_visible=is_visible
+        )
+        
+        db.session.add(review)
+        db.session.commit()
+        flash('Review added successfully!', 'success')
+        return redirect(url_for('admin_reviews'))
+    
+    products = Product.query.all()
+    return render_template('admin_review_form.html', review=None, products=products)
+
+@app.route('/admin/reviews/<int:review_id>/edit', methods=['GET', 'POST'])
+@admin_required
+def admin_edit_review(review_id):
+    review = Review.query.get_or_404(review_id)
+    
+    if request.method == 'POST':
+        review.reviewer_name = request.form.get('reviewer_name')
+        review.rating = int(request.form.get('rating'))
+        review.review_text = request.form.get('review_text')
+        review_date_str = request.form.get('review_date')
+        product_id = request.form.get('product_id')
+        review.is_visible = 'is_visible' in request.form
+        
+        # Parse the datetime-local input
+        try:
+            review.review_date = datetime.fromisoformat(review_date_str)
+        except ValueError:
+            # Fallback for different formats
+            review.review_date = datetime.strptime(review_date_str, '%Y-%m-%dT%H:%M')
+        review.product_id = int(product_id) if product_id else None
+        
+        db.session.commit()
+        flash('Review updated successfully!', 'success')
+        return redirect(url_for('admin_reviews'))
+    
+    products = Product.query.all()
+    return render_template('admin_review_form.html', review=review, products=products)
+
+@app.route('/admin/reviews/<int:review_id>/delete', methods=['POST'])
+@admin_required
+def admin_delete_review(review_id):
+    review = Review.query.get_or_404(review_id)
+    db.session.delete(review)
+    db.session.commit()
+    flash('Review deleted successfully!', 'success')
+    return redirect(url_for('admin_reviews'))
+
+@app.route('/admin/reviews/<int:review_id>/toggle', methods=['POST'])
+@admin_required
+def admin_toggle_review(review_id):
+    review = Review.query.get_or_404(review_id)
+    review.is_visible = not review.is_visible
+    db.session.commit()
+    status = "visible" if review.is_visible else "hidden"
+    flash(f'Review is now {status}!', 'success')
+    return redirect(url_for('admin_reviews'))
 
 @app.route('/admin/logout')
 @admin_required
