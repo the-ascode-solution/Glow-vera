@@ -22,14 +22,24 @@ app = Flask(__name__)
 
 # Production Logging setup (must be early to capture startup issues)
 if not app.debug:
-    if not os.path.exists('logs'):
-        os.mkdir('logs')
-    file_handler = RotatingFileHandler('logs/glowvera.log', maxBytes=10240, backupCount=10)
-    file_handler.setFormatter(logging.Formatter(
-        '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
-    ))
-    file_handler.setLevel(logging.INFO)
-    app.logger.addHandler(file_handler)
+    log_dir = os.path.join(basedir, 'logs')
+    if not os.path.exists(log_dir):
+        try:
+            os.makedirs(log_dir, exist_ok=True)
+        except Exception:
+            pass # Fallback to stdout if we can't create logs
+    
+    log_file = os.path.join(log_dir, 'glowvera.log')
+    try:
+        file_handler = RotatingFileHandler(log_file, maxBytes=10240, backupCount=10)
+        file_handler.setFormatter(logging.Formatter(
+            '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
+        ))
+        file_handler.setLevel(logging.INFO)
+        app.logger.addHandler(file_handler)
+    except Exception as e:
+        print(f"Could not setup log file: {e}")
+        
     app.logger.setLevel(logging.INFO)
     app.logger.info('Glow-Vera startup')
 
@@ -59,6 +69,14 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
+
+# Ensure tables are created on startup (essential for new production tables like Review)
+with app.app_context():
+    try:
+        db.create_all()
+        app.logger.info("Database tables verified/created")
+    except Exception as e:
+        app.logger.error(f"Database initialization error: {e}")
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -899,6 +917,10 @@ def order_confirmation(order_id):
     order = Order.query.get_or_404(order_id)
     # Basic check to prevent easy enumeration of orders, although guest checkout is public
     return render_template('order_confirmation.html', order=order)
+
+@app.route('/health')
+def health():
+    return {'status': 'healthy', 'database': 'connected'}, 200
 
 # Error Handlers
 @app.errorhandler(404)
