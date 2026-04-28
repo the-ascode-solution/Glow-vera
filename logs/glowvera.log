@@ -25,3 +25,5 @@
 2026-04-25 11:14:54,766 WARNING: Running with default SECRET_KEY! This is insecure for production. [in E:\Glowvera Naturals\app.py:38]
 2026-04-25 11:21:15,096 INFO: Glow-Vera startup [in E:\Glowvera Naturals\app.py:34]
 2026-04-25 11:21:15,098 WARNING: Running with default SECRET_KEY! This is insecure for production. [in E:\Glowvera Naturals\app.py:38]
+2026-04-28 03:43:03,619 INFO: Glow-Vera startup [in E:\Glowvera Naturals\app.py:34]
+2026-04-28 03:43:03,628 WARNING: Running with default SECRET_KEY! This is insecure for production. [in E:\Glowvera Naturals\app.py:38]
