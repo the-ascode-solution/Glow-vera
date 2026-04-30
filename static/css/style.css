@@ -1,22 +1,25 @@
 :root {
-    --primary-green: #2E7D32;
-    --light-green: #66BB6A;
+    --primary-green: #1B5E20;
+    --light-green: #43A047;
     --accent-green: #81C784;
-    --pale-green: #E8F5E8;
-    --warm-yellow: #FFD54F;
-    --coral: #FF8A65;
-    --sky-blue: #81D4FA;
-    --earth-brown: #8D6E63;
-    --cream: #FFF8E1;
-    --text-dark: #2C3E50;
-    --text-light: #5D6D7E;
+    --pale-green: #F1F8E9;
+    --warm-yellow: #FFF9C4;
+    --soft-cream: #FFFDF7;
+    --deep-earth: #3E2723;
+    --text-dark: #212121;
+    --text-light: #757575;
+    --glass-bg: rgba(255, 255, 255, 0.85);
+    --transition-smooth: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    --shadow-premium: 0 10px 30px rgba(0, 0, 0, 0.05);
+    --shadow-hover: 0 20px 40px rgba(0, 0, 0, 0.1);
 }
 
 body {
     font-family: 'Poppins', sans-serif;
     color: var(--text-dark);
-    line-height: 1.6;
-    background-color: #FAFAFA;
+    line-height: 1.7;
+    background-color: var(--soft-cream);
+    overflow-x: hidden;
 }
 
 .brand-text {
@@ -72,50 +75,51 @@ body {
 }
 
 .hero-section {
-    background: linear-gradient(135deg, var(--pale-green), var(--cream));
-    padding: 4rem 0;
+    background: linear-gradient(135deg, var(--pale-green) 0%, #FFFFFF 100%);
+    padding: 8rem 0;
     position: relative;
     overflow: hidden;
 }
 
-.hero-section::before {
-    content: '';
-    position: absolute;
-    top: -50%;
-    right: -10%;
-    width: 60%;
-    height: 200%;
-    background: radial-gradient(circle, var(--warm-yellow) 0%, transparent 70%);
-    opacity: 0.1;
-    border-radius: 50%;
+.hero-glass-card {
+    background: var(--glass-bg);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    padding: 3rem;
+    border-radius: 24px;
+    box-shadow: var(--shadow-premium);
 }
 
 .hero-title {
     font-family: 'Playfair Display', serif;
-    font-size: 3.5rem;
-    font-weight: 700;
+    font-size: 4rem;
+    font-weight: 800;
     color: var(--primary-green);
     margin-bottom: 1.5rem;
+    line-height: 1.1;
 }
 
 .hero-subtitle {
-    font-size: 1.2rem;
+    font-size: 1.25rem;
     color: var(--text-light);
-    margin-bottom: 2rem;
+    margin-bottom: 2.5rem;
+    max-width: 90%;
 }
 
 .product-card {
     border: none;
-    border-radius: 15px;
+    border-radius: 20px;
     overflow: hidden;
-    transition: all 0.3s ease;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+    transition: var(--transition-smooth);
+    background: #FFFFFF;
+    box-shadow: var(--shadow-premium);
     height: 100%;
 }
 
 .product-card:hover {
-    transform: translateY(-10px);
-    box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+    transform: translateY(-12px);
+    box-shadow: var(--shadow-hover);
 }
 
 .product-image {

@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, session
+from flask import Flask, render_template, request, redirect, url_for, flash, session, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
@@ -87,10 +87,15 @@ NATIVE_CURRENCY = {'symbol': 'Rs', 'name': 'Pakistani Rupee'}
 @app.context_processor
 def utility_processor():
     def format_price(price):
-        if not price:
-            price = 0
-        symbol = NATIVE_CURRENCY['symbol']
-        return f"{symbol} {int(price):,}"
+        try:
+            if price is None:
+                price = 0
+            # Ensure price is numeric
+            val = float(price)
+            symbol = NATIVE_CURRENCY['symbol']
+            return f"{symbol} {int(val):,}"
+        except (ValueError, TypeError):
+            return f"{NATIVE_CURRENCY['symbol']} 0"
     
     return dict(format_price=format_price, currency=NATIVE_CURRENCY)
 
@@ -102,7 +107,8 @@ def nl2br_filter(s):
 
 @app.route('/favicon.ico')
 def favicon():
-    return '', 204
+    return send_from_directory(os.path.join(app.root_path, 'static', 'images'),
+                               'favicon.png', mimetype='image/png')
 
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -228,15 +234,26 @@ def add_security_headers(response):
     response.headers['X-Content-Type-Options'] = 'nosniff'
     response.headers['X-Frame-Options'] = 'SAMEORIGIN'
     response.headers['X-XSS-Protection'] = '1; mode=block'
+    
+    # Disable caching to prevent 304 status codes as requested by the user
+    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    
     if not app.debug:
         response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
     return response
 
 @app.route('/')
 def index():
-    featured_products = Product.query.filter_by(is_featured=True).limit(6).all()
-    visible_reviews = Review.query.filter_by(is_visible=True).order_by(Review.review_date.desc()).limit(6).all()
-    return render_template('index.html', featured_products=featured_products, visible_reviews=visible_reviews)
+    try:
+        featured_products = Product.query.filter_by(is_featured=True).limit(6).all()
+        visible_reviews = Review.query.filter_by(is_visible=True).order_by(Review.review_date.desc()).limit(6).all()
+        return render_template('index.html', featured_products=featured_products, visible_reviews=visible_reviews)
+    except Exception as e:
+        app.logger.error(f"Error rendering index: {e}")
+        # Fallback to empty lists if DB fails but server is up
+        return render_template('index.html', featured_products=[], visible_reviews=[])
 
 @app.route('/products')
 def products():

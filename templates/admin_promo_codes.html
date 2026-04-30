@@ -156,6 +156,7 @@
                                         <td>
                                             <div class="btn-group" role="group">
                                                 <form method="POST" action="{{ url_for('admin_toggle_promo', promo_id=promo.id) }}" class="d-inline">
+                                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                                     <button type="submit" class="btn btn-sm {{ 'btn-outline-warning' if promo.is_active else 'btn-outline-success' }}" 
                                                             title="{{ 'Deactivate' if promo.is_active else 'Activate' }}">
                                                         <i class="fas {{ 'fa-pause' if promo.is_active else 'fa-play' }}"></i>
@@ -163,6 +164,7 @@
                                                 </form>
                                                 <form method="POST" action="{{ url_for('admin_delete_promo', promo_id=promo.id) }}" class="d-inline" 
                                                       onsubmit="return confirm('Are you sure you want to delete this promo code?')">
+                                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                                     <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">
                                                         <i class="fas fa-trash"></i>
                                                     </button>
