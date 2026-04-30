@@ -70,15 +70,10 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 
-@app.route('/health')
-def health_check():
-    return "Glowvera Server is UP and Running!"
-
 # Ensure tables are created on startup (essential for new production tables like Review)
 with app.app_context():
     try:
         db.create_all()
-        app.logger.info("Database tables verified/created")
     except Exception as e:
         app.logger.error(f"Database initialization error: {e}")
 
@@ -246,16 +241,8 @@ def add_security_headers(response):
     response.headers['X-Content-Type-Options'] = 'nosniff'
     response.headers['X-Frame-Options'] = 'SAMEORIGIN'
     response.headers['X-XSS-Protection'] = '1; mode=block'
-    # Relaxed CSP for production compatibility
+    # Secure but compatible CSP
     response.headers['Content-Security-Policy'] = "default-src 'self' *; script-src 'self' 'unsafe-inline' 'unsafe-eval' *; style-src 'self' 'unsafe-inline' *; font-src 'self' *; img-src 'self' data: *; connect-src 'self' *;"
-    
-    # Disable caching to prevent 304 status codes as requested by the user
-    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
-    response.headers['Pragma'] = 'no-cache'
-    response.headers['Expires'] = '0'
-    
-    if not app.debug:
-        response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
     return response
 
 @app.route('/')
@@ -690,24 +677,8 @@ def admin_settings():
 @app.route('/admin/reviews')
 @admin_required
 def admin_reviews():
-    try:
-        reviews = Review.query.order_by(Review.review_date.desc()).all()
-        return render_template('admin_reviews.html', reviews=reviews)
-    except Exception as e:
-        if 'no such table: review' in str(e).lower():
-            try:
-                db.create_all()
-                app.logger.info("Created missing database tables")
-                return redirect(url_for('admin_reviews'))
-            except Exception as create_error:
-                error_msg = f"CRITICAL DATABASE ERROR: {str(create_error)}"
-                app.logger.error(error_msg)
-                return f"<h1>Database Error</h1><p>We tried to create the missing tables but failed: {error_msg}</p>"
-        
-        # Other errors
-        error_msg = f"PRODUCTION ERROR: {str(e)}"
-        app.logger.error(error_msg)
-        return f"<h1>Debug Info</h1><p>{error_msg}</p><a href='/admin'>Back to Admin</a>"
+    reviews = Review.query.order_by(Review.review_date.desc()).all()
+    return render_template('admin_reviews.html', reviews=reviews)
 
 @app.route('/admin/reviews/new', methods=['GET', 'POST'])
 @admin_required
@@ -976,9 +947,8 @@ def page_not_found(e):
 
 @app.errorhandler(500)
 def internal_server_error(e):
-    import traceback
-    error_details = traceback.format_exc()
-    return f"<h1>Production Debug Info</h1><pre>{error_details}</pre>", 500
+    db.session.rollback()
+    return render_template('500.html'), 500
 
 # Production Logging (Already set up at top)
 

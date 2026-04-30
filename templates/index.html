@@ -19,7 +19,8 @@
                 <div class="position-relative">
                     <img src="{{ url_for('static', filename='images/hero_premium.png') }}" 
                          alt="Glowvera Naturals Hero" 
-                         class="img-fluid rounded-4 shadow-lg">
+                         class="img-fluid rounded-4 shadow-lg"
+                         width="600" height="600">
                 </div>
             </div>
         </div>
@@ -35,7 +36,7 @@
                     <div class="nature-icon mb-4">
                         <i class="fas fa-leaf fa-2x"></i>
                     </div>
-                    <h4 class="mb-3 fw-bold">100% Organic</h4>
+                    <h2 class="h4 mb-3 fw-bold">100% Organic</h2>
                     <p class="text-muted">Certified organic ingredients, harvested sustainably and free from synthetic chemicals.</p>
                 </div>
             </div>
@@ -44,7 +45,7 @@
                     <div class="nature-icon mb-4">
                         <i class="fas fa-hand-holding-heart fa-2x"></i>
                     </div>
-                    <h4 class="mb-3 fw-bold">Handcrafted</h4>
+                    <h2 class="h4 mb-3 fw-bold">Handcrafted</h2>
                     <p class="text-muted">Small-batch production ensures artisanal quality and attention to every detail.</p>
                 </div>
             </div>
@@ -53,7 +54,7 @@
                     <div class="nature-icon mb-4">
                         <i class="fas fa-seedling fa-2x"></i>
                     </div>
-                    <h4 class="mb-3 fw-bold">Eco-Conscious</h4>
+                    <h2 class="h4 mb-3 fw-bold">Eco-Conscious</h2>
                     <p class="text-muted">Our commitment to the planet includes sustainable packaging and zero-waste practices.</p>
                 </div>
             </div>
@@ -149,7 +150,7 @@
                                 <span class="fw-bold">{{ review.reviewer_name[0] }}</span>
                             </div>
                             <div>
-                                <h6 class="mb-0 fw-bold">{{ review.reviewer_name }}</h6>
+                                <h3 class="h6 mb-0 fw-bold">{{ review.reviewer_name }}</h3>
                                 <small class="text-muted">{{ review.review_date.strftime('%B %d, %Y') }}</small>
                             </div>
                         </div>
