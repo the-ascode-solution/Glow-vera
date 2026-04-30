@@ -242,6 +242,8 @@ def add_security_headers(response):
     response.headers['X-Content-Type-Options'] = 'nosniff'
     response.headers['X-Frame-Options'] = 'SAMEORIGIN'
     response.headers['X-XSS-Protection'] = '1; mode=block'
+    # Relaxed CSP for production compatibility
+    response.headers['Content-Security-Policy'] = "default-src 'self' *; script-src 'self' 'unsafe-inline' 'unsafe-eval' *; style-src 'self' 'unsafe-inline' *; font-src 'self' *; img-src 'self' data: *; connect-src 'self' *;"
     
     # Disable caching to prevent 304 status codes as requested by the user
     response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
