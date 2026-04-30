@@ -952,7 +952,9 @@ def page_not_found(e):
 
 @app.errorhandler(500)
 def internal_server_error(e):
-    return render_template('500.html'), 500
+    import traceback
+    error_details = traceback.format_exc()
+    return f"<h1>Production Debug Info</h1><pre>{error_details}</pre>", 500
 
 # Production Logging (Already set up at top)
 
