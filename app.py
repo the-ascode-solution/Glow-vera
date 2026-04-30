@@ -222,7 +222,15 @@ from functools import wraps
 def admin_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if not current_user.is_authenticated or not current_user.is_admin:
+        # Gracefully handle missing is_admin column or unauthenticated users
+        is_admin = False
+        try:
+            if current_user.is_authenticated:
+                is_admin = getattr(current_user, 'is_admin', False)
+        except Exception:
+            is_admin = False
+            
+        if not is_admin:
             flash('Unauthorized access. Admin privileges required.', 'error')
             return redirect(url_for('index'))
         return f(*args, **kwargs)
@@ -676,6 +684,7 @@ def admin_settings():
 @app.route('/admin/reviews')
 @admin_required
 def admin_reviews():
+    return "TESTING ROUTE REACHABILITY"
     try:
         reviews = Review.query.order_by(Review.review_date.desc()).all()
         return render_template('admin_reviews.html', reviews=reviews)
