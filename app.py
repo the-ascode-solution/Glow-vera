@@ -70,6 +70,10 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 
+@app.route('/health')
+def health_check():
+    return "Glowvera Server is UP and Running!"
+
 # Ensure tables are created on startup (essential for new production tables like Review)
 with app.app_context():
     try:
