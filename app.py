@@ -676,7 +676,12 @@ def admin_settings():
 @app.route('/admin/reviews')
 @admin_required
 def admin_reviews():
-    reviews = Review.query.order_by(Review.review_date.desc()).all()
+    try:
+        reviews = Review.query.order_by(Review.review_date.desc()).all()
+    except Exception as e:
+        app.logger.error(f"Error fetching reviews, attempting to create tables: {e}")
+        db.create_all()
+        reviews = []
     return render_template('admin_reviews.html', reviews=reviews)
 
 @app.route('/admin/reviews/new', methods=['GET', 'POST'])
