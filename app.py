@@ -678,11 +678,12 @@ def admin_settings():
 def admin_reviews():
     try:
         reviews = Review.query.order_by(Review.review_date.desc()).all()
+        return render_template('admin_reviews.html', reviews=reviews)
     except Exception as e:
-        app.logger.error(f"Error fetching reviews, attempting to create tables: {e}")
-        db.create_all()
-        reviews = []
-    return render_template('admin_reviews.html', reviews=reviews)
+        # Diagnostic mode: display the error to find root cause on production
+        error_msg = f"PRODUCTION ERROR: {str(e)}"
+        app.logger.error(error_msg)
+        return f"<h1>Debug Info</h1><p>{error_msg}</p><a href='/admin'>Back to Admin</a>"
 
 @app.route('/admin/reviews/new', methods=['GET', 'POST'])
 @admin_required
