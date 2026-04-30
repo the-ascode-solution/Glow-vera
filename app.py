@@ -694,7 +694,17 @@ def admin_reviews():
         reviews = Review.query.order_by(Review.review_date.desc()).all()
         return render_template('admin_reviews.html', reviews=reviews)
     except Exception as e:
-        # Diagnostic mode: display the error to find root cause on production
+        if 'no such table: review' in str(e).lower():
+            try:
+                db.create_all()
+                app.logger.info("Created missing database tables")
+                return redirect(url_for('admin_reviews'))
+            except Exception as create_error:
+                error_msg = f"CRITICAL DATABASE ERROR: {str(create_error)}"
+                app.logger.error(error_msg)
+                return f"<h1>Database Error</h1><p>We tried to create the missing tables but failed: {error_msg}</p>"
+        
+        # Other errors
         error_msg = f"PRODUCTION ERROR: {str(e)}"
         app.logger.error(error_msg)
         return f"<h1>Debug Info</h1><p>{error_msg}</p><a href='/admin'>Back to Admin</a>"
