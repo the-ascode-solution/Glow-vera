@@ -26,6 +26,11 @@
         color: white;
     }
     
+    .stat-icon.categories {
+        background: linear-gradient(135deg, #9C27B0, #E91E63);
+        color: white;
+    }
+    
     .recent-orders {
         background: white;
         border-radius: 15px;
@@ -78,6 +83,18 @@
             <p class="text-muted mb-0">Messages</p>
         </div>
     </div>
+    <div class="col-md-3 mb-3">
+        <div class="stat-card">
+            <div class="stat-icon categories">
+                <i class="fas fa-list"></i>
+            </div>
+            <h3 class="mb-1">{{ total_categories }}</h3>
+            <p class="text-muted mb-0">Categories</p>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
     <div class="col-md-3 mb-3">
         <div class="stat-card">
             <div class="stat-icon stock">

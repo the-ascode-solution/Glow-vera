@@ -19,12 +19,6 @@
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
-    <style>
-        /* Improve font loading perceived performance */
-        @font-face {
-            font-display: swap;
-        }
-    </style>
     {% block extra_css %}{% endblock %}
 </head>
 <body class="bg-cream">
@@ -43,7 +37,18 @@
                 <ul class="navbar-nav mx-auto">
                     <li class="nav-item"><a class="nav-link" href="{{ url_for('index') }}">Home</a></li>
                     <li class="nav-item"><a class="nav-link" href="{{ url_for('about') }}">About Us</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ url_for('products') }}">Shop</a></li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            Shop by Category
+                        </a>
+                        <ul class="dropdown-menu border-0 shadow-sm rounded-4 py-3" aria-labelledby="navbarDropdown">
+                            <li><a class="dropdown-item px-4" href="{{ url_for('products') }}">All Products</a></li>
+                            <li><hr class="dropdown-divider opacity-10"></li>
+                            {% for cat_name in nav_categories %}
+                            <li><a class="dropdown-item px-4" href="{{ url_for('products', category=cat_name) }}">{{ cat_name }}</a></li>
+                            {% endfor %}
+                        </ul>
+                    </li>
                     <li class="nav-item"><a class="nav-link" href="#">Ingredients</a></li>
                     <li class="nav-item"><a class="nav-link" href="#">Blog</a></li>
                     <li class="nav-item"><a class="nav-link" href="{{ url_for('contact') }}">Contact</a></li>

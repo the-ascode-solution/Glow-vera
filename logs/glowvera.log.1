@@ -1,4 +1,4 @@
-2026-05-02 22:11:30,228 ERROR: Exception on / [GET] [in C:\Users\Shahzaib Shahzad\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\flask\app.py:875]
+2026-05-02 22:11:27,716 ERROR: Exception on / [GET] [in C:\Users\Shahzaib Shahzad\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\flask\app.py:875]
 Traceback (most recent call last):
   File "C:\Users\Shahzaib Shahzad\Desktop\New folder (4)\Glow-vera\app.py", line 264, in index
     return render_template('index.html', featured_products=featured_products, visible_reviews=visible_reviews)
@@ -112,5 +112,4 @@ Traceback (most recent call last):
   File "C:\Users\Shahzaib Shahzad\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\sqlalchemy\orm\mapper.py", line 4264, in _do_configure_registries
     raise e
 sqlalchemy.exc.InvalidRequestError: One or more mappers failed to initialize - can't proceed with initialization of other mappers. Triggering mapper: 'Mapper[Category(category)]'. Original exception was: Could not determine join condition between parent/child tables on relationship Category.products - there are no foreign keys linking these tables.  Ensure that referencing columns are associated with a ForeignKey or ForeignKeyConstraint, or specify a 'primaryjoin' expression.
-2026-05-02 22:12:11,782 INFO: Glow-Vera startup [in C:\Users\Shahzaib Shahzad\Desktop\New folder (4)\Glow-vera\app.py:44]
-2026-05-02 22:12:11,784 WARNING: Running with default SECRET_KEY! This is insecure for production. [in C:\Users\Shahzaib Shahzad\Desktop\New folder (4)\Glow-vera\app.py:48]
+2026-05-02 22:11:30,222 ERROR: Error rendering index: One or more mappers failed to initialize - can't proceed with initialization of other mappers. Triggering mapper: 'Mapper[Category(category)]'. Original exception was: Could not determine join condition between parent/child tables on relationship Category.products - there are no foreign keys linking these tables.  Ensure that referencing columns are associated with a ForeignKey or ForeignKeyConstraint, or specify a 'primaryjoin' expression. [in C:\Users\Shahzaib Shahzad\Desktop\New folder (4)\Glow-vera\app.py:268]

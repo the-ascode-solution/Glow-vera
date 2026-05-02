@@ -96,7 +96,13 @@ def utility_processor():
         except (ValueError, TypeError):
             return f"{NATIVE_CURRENCY['symbol']} 0"
     
-    return dict(format_price=format_price, currency=NATIVE_CURRENCY)
+    def get_categories():
+        try:
+            return [cat.name for cat in Category.query.order_by(Category.name).all()]
+        except Exception:
+            return []
+    
+    return dict(format_price=format_price, currency=NATIVE_CURRENCY, nav_categories=get_categories())
 
 @app.template_filter('nl2br')
 def nl2br_filter(s):
@@ -127,13 +133,18 @@ class User(UserMixin, db.Model):
     
     orders = db.relationship('Order', backref='user', lazy=True)
 
+class Category(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50), unique=True, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
 class Product(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text, nullable=False)
     price = db.Column(db.Float, nullable=False)
     image_url = db.Column(db.String(200))
-    category = db.Column(db.String(50), nullable=False)
+    category = db.Column(db.String(50), nullable=False)  # Kept as string for compatibility, but populated from Category
     stock_quantity = db.Column(db.Integer, default=0)
     ingredients = db.Column(db.Text)
     weight_grams = db.Column(db.Integer)
@@ -258,14 +269,17 @@ def index():
 
 @app.route('/products')
 def products():
-    category = request.args.get('category')
-    if category:
-        products = Product.query.filter_by(category=category).all()
+    category_name = request.args.get('category')
+    if category_name:
+        products = Product.query.filter_by(category=category_name).all()
     else:
         products = Product.query.all()
-    categories = db.session.query(Product.category).distinct().all()
-    categories = [cat[0] for cat in categories]
-    return render_template('products.html', products=products, categories=categories, selected_category=category)
+    
+    # Get categories that actually have products OR all from Category module
+    categories = Category.query.all()
+    category_names = [cat.name for cat in categories]
+    
+    return render_template('products.html', products=products, categories=category_names, selected_category=category_name)
 
 @app.route('/product/<int:product_id>')
 def product_detail(product_id):
@@ -447,6 +461,7 @@ def admin_dashboard():
     total_products = Product.query.count()
     total_orders = Order.query.count()
     total_messages = ContactMessage.query.count()
+    total_categories = Category.query.count()
     recent_orders = Order.query.order_by(Order.created_at.desc()).limit(5).all()
     low_stock_products = Product.query.filter(Product.stock_quantity < 10).all()
     
@@ -454,6 +469,7 @@ def admin_dashboard():
                          total_products=total_products,
                          total_orders=total_orders,
                          total_messages=total_messages,
+                         total_categories=total_categories,
                          recent_orders=recent_orders,
                          low_stock_products=low_stock_products)
 
@@ -493,7 +509,8 @@ def admin_add_product():
         flash('Product added successfully!', 'success')
         return redirect(url_for('admin_products'))
     
-    return render_template('admin_product_form.html', product=None)
+    categories = Category.query.all()
+    return render_template('admin_product_form.html', product=None, categories=categories)
 
 @app.route('/admin/product/<int:product_id>/edit', methods=['GET', 'POST'])
 @admin_required
@@ -524,7 +541,8 @@ def admin_edit_product(product_id):
         flash('Product updated successfully!', 'success')
         return redirect(url_for('admin_products'))
     
-    return render_template('admin_product_form.html', product=product)
+    categories = Category.query.all()
+    return render_template('admin_product_form.html', product=product, categories=categories)
 
 @app.route('/admin/product/<int:product_id>/delete', methods=['POST'])
 @admin_required
@@ -534,6 +552,75 @@ def admin_delete_product(product_id):
     db.session.commit()
     flash('Product deleted successfully!', 'success')
     return redirect(url_for('admin_products'))
+
+# Category Management Routes
+@app.route('/admin/categories')
+@admin_required
+def admin_categories():
+    categories = Category.query.order_by(Category.name).all()
+    return render_template('admin_categories.html', categories=categories)
+
+@app.route('/admin/category/new', methods=['GET', 'POST'])
+@admin_required
+def admin_add_category():
+    if request.method == 'POST':
+        name = request.form.get('name').strip()
+        if not name:
+            flash('Category name is required', 'error')
+        else:
+            existing = Category.query.filter_by(name=name).first()
+            if existing:
+                flash('Category already exists', 'error')
+            else:
+                new_cat = Category(name=name)
+                db.session.add(new_cat)
+                db.session.commit()
+                flash('Category added successfully', 'success')
+                return redirect(url_for('admin_categories'))
+    
+    return render_template('admin_category_form.html', category=None)
+
+@app.route('/admin/category/<int:cat_id>/edit', methods=['GET', 'POST'])
+@admin_required
+def admin_edit_category(cat_id):
+    category = Category.query.get_or_404(cat_id)
+    if request.method == 'POST':
+        name = request.form.get('name').strip()
+        if not name:
+            flash('Category name is required', 'error')
+        else:
+            existing = Category.query.filter(Category.name == name, Category.id != cat_id).first()
+            if existing:
+                flash('Category name already taken', 'error')
+            else:
+                # Update products that use this category name
+                old_name = category.name
+                category.name = name
+                
+                # Update all products with the old category name to the new one
+                products_to_update = Product.query.filter_by(category=old_name).all()
+                for p in products_to_update:
+                    p.category = name
+                
+                db.session.commit()
+                flash('Category updated successfully', 'success')
+                return redirect(url_for('admin_categories'))
+    
+    return render_template('admin_category_form.html', category=category)
+
+@app.route('/admin/category/<int:cat_id>/delete', methods=['POST'])
+@admin_required
+def admin_delete_category(cat_id):
+    category = Category.query.get_or_404(cat_id)
+    # Check if products are using this category
+    product_count = Product.query.filter_by(category=category.name).count()
+    if product_count > 0:
+        flash(f'Cannot delete category. {product_count} products are currently assigned to it.', 'error')
+    else:
+        db.session.delete(category)
+        db.session.commit()
+        flash('Category deleted successfully', 'success')
+    return redirect(url_for('admin_categories'))
 
 @app.route('/admin/orders')
 @admin_required
