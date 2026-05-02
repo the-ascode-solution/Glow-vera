@@ -265,7 +265,7 @@
                             </div>
                             <div>
                                 <h3 class="h6 mb-0 fw-bold">{{ review.reviewer_name }}</h3>
-                                <small class="text-muted">{{ review.review_date.strftime('%B %d, %Y') }}</small>
+                                <small class="text-muted">{{ review.review_date.strftime('%B %d, %Y') if review.review_date else 'Recent' }}</small>
                             </div>
                         </div>
                     </div>
