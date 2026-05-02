@@ -49,6 +49,8 @@ if not app.debug and app.config['SECRET_KEY'] == 'default_secret_key_for_dev_onl
 # Use absolute path for SQLite to avoid issues on shared hosting
 default_db_path = f"sqlite:///{os.path.join(basedir, 'instance', 'glowvera.db')}"
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('SQLALCHEMY_DATABASE_URI', default_db_path)
+if app.config['SQLALCHEMY_DATABASE_URI'] and app.config['SQLALCHEMY_DATABASE_URI'].startswith("postgres://"):
+    app.config['SQLALCHEMY_DATABASE_URI'] = app.config['SQLALCHEMY_DATABASE_URI'].replace("postgres://", "postgresql://", 1)
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Enable CSRF Protection
