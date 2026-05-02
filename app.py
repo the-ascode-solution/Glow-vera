@@ -269,17 +269,21 @@ def index():
 
 @app.route('/products')
 def products():
-    category_name = request.args.get('category')
-    if category_name:
-        products = Product.query.filter_by(category=category_name).all()
-    else:
-        products = Product.query.all()
-    
-    # Get categories that actually have products OR all from Category module
-    categories = Category.query.all()
-    category_names = [cat.name for cat in categories]
-    
-    return render_template('products.html', products=products, categories=category_names, selected_category=category_name)
+    try:
+        category_name = request.args.get('category')
+        if category_name:
+            products = Product.query.filter_by(category=category_name).all()
+        else:
+            products = Product.query.all()
+        
+        # Get categories from Category module
+        categories = Category.query.all()
+        category_names = [cat.name for cat in categories]
+        
+        return render_template('products.html', products=products, categories=category_names, selected_category=category_name)
+    except Exception as e:
+        app.logger.error(f"Error rendering products: {e}")
+        return render_template('products.html', products=[], categories=[], selected_category=None)
 
 @app.route('/product/<int:product_id>')
 def product_detail(product_id):
