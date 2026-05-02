@@ -63,6 +63,41 @@
     </div>
 </section>
 
+<!-- Horizontal Scroll Section -->
+<section class="py-5 bg-white overflow-hidden">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-end mb-4" data-aos="fade-up">
+            <div>
+                <h2 class="section-title text-start mb-1">New Arrivals</h2>
+                <p class="text-muted mb-0">Fresh botanical blends just added to our collection</p>
+            </div>
+            <a href="{{ url_for('products') }}" class="btn btn-outline-primary btn-sm rounded-pill d-none d-md-inline-block">View All</a>
+        </div>
+        
+        <div class="horizontal-scroll-wrapper" data-aos="fade-up">
+            <div class="horizontal-scroll-content pb-4">
+                {% for product in featured_products %}
+                <div class="scroll-item">
+                    <div class="product-card h-100">
+                        <div class="position-relative overflow-hidden">
+                            <img src="{{ product.image_url }}" alt="{{ product.name }}" class="product-image w-100" onerror="this.src='https://placehold.co/300x300/F1F8E9/1B5E20?text=Image+Not+Available'">
+                            <div class="category-badge position-absolute top-0 start-0 m-3">{{ product.category }}</div>
+                        </div>
+                        <div class="card-body p-3">
+                            <h5 class="product-title small mb-1">{{ product.name }}</h5>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="product-price fs-6">{{ format_price(product.price) }}</span>
+                                <a href="{{ url_for('product_detail', product_id=product.id) }}" class="btn btn-link p-0 text-success"><i class="fas fa-arrow-right"></i></a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</section>
+
 <!-- Featured Products -->
 <section class="featured-section py-5">
     <div class="container">
@@ -73,7 +108,7 @@
         
         <div class="row">
             {% for product in featured_products %}
-            <div class="col-lg-4 col-md-6 mb-4" data-aos="fade-up" data-aos-delay="{{ loop.index * 100 }}">
+            <div class="col-6 col-md-6 col-lg-4 mb-4" data-aos="fade-up" data-aos-delay="{{ loop.index * 100 }}">
                 <div class="product-card">
                     <div class="position-relative overflow-hidden">
                         <img src="{{ product.image_url }}" alt="{{ product.name }}" class="product-image w-100" onerror="this.src='https://placehold.co/300x300/F1F8E9/1B5E20?text=Image+Not+Available'">
