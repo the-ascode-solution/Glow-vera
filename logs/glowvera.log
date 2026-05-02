@@ -116,3 +116,5 @@ sqlalchemy.exc.InvalidRequestError: One or more mappers failed to initialize - c
 2026-05-02 22:12:11,784 WARNING: Running with default SECRET_KEY! This is insecure for production. [in C:\Users\Shahzaib Shahzad\Desktop\New folder (4)\Glow-vera\app.py:48]
 2026-05-02 22:28:48,145 INFO: Glow-Vera startup [in C:\Users\Shahzaib Shahzad\Desktop\New folder (4)\Glow-vera\app.py:44]
 2026-05-02 22:28:48,148 WARNING: Running with default SECRET_KEY! This is insecure for production. [in C:\Users\Shahzaib Shahzad\Desktop\New folder (4)\Glow-vera\app.py:48]
+2026-05-02 22:36:52,066 INFO: Glow-Vera startup [in C:\Users\Shahzaib Shahzad\Desktop\New folder (4)\Glow-vera\app.py:44]
+2026-05-02 22:36:52,068 WARNING: Running with default SECRET_KEY! This is insecure for production. [in C:\Users\Shahzaib Shahzad\Desktop\New folder (4)\Glow-vera\app.py:48]

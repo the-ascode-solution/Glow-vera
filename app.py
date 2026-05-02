@@ -1043,8 +1043,13 @@ def internal_server_error(e):
 
 # Production Logging (Already set up at top)
 
-if __name__ == '__main__':
-    with app.app_context():
+# Initialize database tables
+with app.app_context():
+    try:
         db.create_all()
+    except Exception as e:
+        app.logger.error(f"Error during db.create_all: {e}")
+
+if __name__ == '__main__':
     debug_mode = os.getenv('DEBUG', 'False').lower() == 'true'
     app.run(debug=debug_mode)
