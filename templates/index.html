@@ -5,58 +5,109 @@
 <section class="hero-section">
     <div class="container">
         <div class="row align-items-center">
-            <div class="col-lg-6" data-aos="fade-right">
-                <div class="hero-glass-card">
-                    <h1 class="hero-title">Elevate Your Natural Glow</h1>
-                    <p class="hero-subtitle">Discover handcrafted organic skincare and haircare products, meticulously formulated with nature's purest botanical ingredients.</p>
+            <div class="col-lg-5" data-aos="fade-right">
+                <div class="hero-content py-5">
+                    <h6 class="text-uppercase tracking-widest mb-3 text-primary-color fw-bold">Rooted in nature. Made with care.</h6>
+                    <h1 class="hero-title mb-4">Pure Ingredients.<br>Natural <span>Glow.</span></h1>
+                    <p class="hero-subtitle mb-5">Handcrafted soaps and skincare made with nature's finest ingredients for healthy, radiant skin.</p>
                     <div class="d-flex gap-3">
-                        <a href="{{ url_for('products') }}" class="btn btn-primary btn-lg px-5">Shop Collection</a>
-                        <a href="{{ url_for('about') }}" class="btn btn-outline-primary btn-lg px-5">Our Story</a>
+                        <a href="{{ url_for('products') }}" class="btn btn-primary btn-lg px-5">Shop Now <i class="fas fa-arrow-right ms-2"></i></a>
+                    </div>
+                    
+                    <div class="hero-badges d-flex gap-4 mt-5">
+                        <div class="badge-item text-center">
+                            <i class="fas fa-leaf mb-2 text-primary-color"></i>
+                            <div class="small fw-bold">Natural<br>Ingredients</div>
+                        </div>
+                        <div class="badge-item text-center">
+                            <i class="fas fa-hand-holding-heart mb-2 text-primary-color"></i>
+                            <div class="small fw-bold">Handcrafted<br>with Care</div>
+                        </div>
+                        <div class="badge-item text-center">
+                            <i class="fas fa-check-circle mb-2 text-primary-color"></i>
+                            <div class="small fw-bold">Suitable for<br>All Skin Types</div>
+                        </div>
                     </div>
                 </div>
             </div>
-            <div class="col-lg-6 mt-5 mt-lg-0" data-aos="fade-left">
-                <div class="position-relative">
+            <div class="col-lg-7" data-aos="fade-left">
+                <div class="hero-image-wrapper position-relative">
                     <img src="{{ url_for('static', filename='images/herosection.jpg') }}" 
-                         alt="Glowvera Naturals Hero" 
-                         class="img-fluid rounded-4 shadow-lg"
-                         width="800" height="600"
-                         fetchpriority="high">
+                         alt="GlowRoot Collection" 
+                         class="img-fluid w-100 shadow-premium"
+                         style="border-radius: 4px;">
                 </div>
             </div>
         </div>
     </div>
 </section>
 
-<!-- Features Section -->
+<!-- Featured Products (Bestsellers) -->
 <section class="py-5 bg-white">
     <div class="container">
+        <div class="text-center mb-5" data-aos="fade-up">
+            <h2 class="section-title">Our Bestsellers</h2>
+            <p class="section-subtitle">Loved by thousands. Made by nature.</p>
+        </div>
+        
+        <div class="row">
+            {% for product in featured_products %}
+            <div class="col-lg-3 col-md-6 mb-4" data-aos="fade-up" data-aos-delay="{{ loop.index * 100 }}">
+                <div class="product-card border-0 text-center">
+                    <div class="position-relative overflow-hidden mb-3">
+                        <img src="{{ product.image_url }}" alt="{{ product.name }}" class="product-image w-100" style="border-radius: 4px;">
+                    </div>
+                    <div class="card-body p-0">
+                        <h6 class="product-title mb-1 fw-bold">{{ product.name }}</h6>
+                        <p class="text-muted small mb-2">{{ product.description[:50] }}...</p>
+                        <div class="d-flex justify-content-center align-items-center gap-3">
+                            <span class="product-price fw-bold">{{ format_price(product.price) }}</span>
+                            <a href="{{ url_for('add_to_cart', product_id=product.id) }}" class="btn btn-primary btn-sm rounded-circle p-0 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                                <i class="fas fa-shopping-cart" style="font-size: 0.7rem;"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <div class="text-center mt-4">
+            <a href="{{ url_for('products') }}" class="btn btn-outline-primary px-5">View All Products</a>
+        </div>
+    </div>
+</section>
+
+<!-- Features Section -->
+<section class="py-5 bg-cream border-top border-bottom border-secondary-brown border-opacity-10">
+    <div class="container">
         <div class="row text-center">
-            <div class="col-md-4 mb-4" data-aos="zoom-in" data-aos-delay="100">
-                <div class="feature-card p-5">
-                    <div class="nature-icon mb-4">
-                        <i class="fas fa-leaf fa-2x"></i>
-                    </div>
-                    <h2 class="h4 mb-3 fw-bold">100% Organic</h2>
-                    <p class="text-muted">Certified organic ingredients, harvested sustainably and free from synthetic chemicals.</p>
+            <div class="col-md-3 col-6 mb-4" data-aos="zoom-in" data-aos-delay="100">
+                <div class="d-flex flex-column align-items-center">
+                    <i class="fas fa-leaf fa-2x mb-3 text-secondary-brown opacity-50"></i>
+                    <h6 class="fw-bold mb-1">100% Natural</h6>
+                    <p class="text-muted small mb-0">Pure goodness from nature</p>
                 </div>
             </div>
-            <div class="col-md-4 mb-4" data-aos="zoom-in" data-aos-delay="200">
-                <div class="feature-card p-5">
-                    <div class="nature-icon mb-4">
-                        <i class="fas fa-hand-holding-heart fa-2x"></i>
-                    </div>
-                    <h2 class="h4 mb-3 fw-bold">Handcrafted</h2>
-                    <p class="text-muted">Small-batch production ensures artisanal quality and attention to every detail.</p>
+            <div class="col-md-3 col-6 mb-4" data-aos="zoom-in" data-aos-delay="200">
+                <div class="d-flex flex-column align-items-center">
+                    <i class="fas fa-mortar-pestle fa-2x mb-3 text-secondary-brown opacity-50"></i>
+                    <h6 class="fw-bold mb-1">Handcrafted</h6>
+                    <p class="text-muted small mb-0">Small batches made with care</p>
                 </div>
             </div>
-            <div class="col-md-4 mb-4" data-aos="zoom-in" data-aos-delay="300">
-                <div class="feature-card p-5">
-                    <div class="nature-icon mb-4">
-                        <i class="fas fa-seedling fa-2x"></i>
-                    </div>
-                    <h2 class="h4 mb-3 fw-bold">Eco-Conscious</h2>
-                    <p class="text-muted">Our commitment to the planet includes sustainable packaging and zero-waste practices.</p>
+            <div class="col-md-3 col-6 mb-4" data-aos="zoom-in" data-aos-delay="300">
+                <div class="d-flex flex-column align-items-center">
+                    <i class="fas fa-seedling fa-2x mb-3 text-secondary-brown opacity-50"></i>
+                    <h6 class="fw-bold mb-1">Eco Friendly</h6>
+                    <p class="text-muted small mb-0">Sustainable packaging</p>
+                </div>
+            </div>
+            <div class="col-md-3 col-6 mb-4" data-aos="zoom-in" data-aos-delay="400">
+                <div class="d-flex flex-column align-items-center">
+                    <i class="fas fa-heart fa-2x mb-3 text-secondary-brown opacity-50"></i>
+                    <h6 class="fw-bold mb-1">Cruelty Free</h6>
+                    <p class="text-muted small mb-0">Not tested on animals</p>
                 </div>
             </div>
         </div>
@@ -134,24 +185,51 @@
     </div>
 </section>
 
-<!-- About Section -->
-<section id="about" class="about-section py-5">
+<!-- Our Story Section -->
+<section class="py-5 bg-white">
     <div class="container">
         <div class="row align-items-center">
             <div class="col-lg-6" data-aos="fade-right">
                 <div class="pe-lg-5">
                     <img src="{{ url_for('static', filename='images/logo.jpeg') }}" 
-                         alt="About Glowvera Naturals" 
-                         class="img-fluid rounded-4 shadow-lg">
+                         alt="Our Story" 
+                         class="img-fluid shadow-premium" style="border-radius: 4px;">
                 </div>
             </div>
             <div class="col-lg-6 mt-5 mt-lg-0" data-aos="fade-left">
-                <h2 class="section-title text-start mb-4">Our Heritage</h2>
+                <h6 class="text-uppercase tracking-widest mb-3 text-primary-color fw-bold small">Our Story</h6>
+                <h2 class="section-title text-start mb-4">Rooted in Nature,<br>Inspired by <span>You.</span></h2>
                 <div class="about-content">
-                    <p class="lead mb-4">Welcome to Glowvera Naturals, where nature's intelligence meets artisanal science.</p>
-                    <p class="mb-4">Born from a deep-rooted passion for purity, we believe that true beauty comes from what is real. Every serum, soap, and oil we create is a testament to the healing power of plants.</p>
-                    <p class="mb-4">We source only certified organic ingredients from sustainable farms that share our vision for a healthier world. Our small-batch process ensures that every bottle reaches you with its botanical potency intact.</p>
-                    <a href="{{ url_for('about') }}" class="btn btn-outline-primary">Read Our Full Story</a>
+                    <p class="mb-4">Nature has everything we need to glow. GlowRoot is our way of bringing that pure goodness to your daily routine.</p>
+                    
+                    <div class="row mb-5">
+                        <div class="col-6 mb-3">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-check text-primary-color me-2"></i>
+                                <span class="small fw-bold">Vegan</span>
+                            </div>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-check text-primary-color me-2"></i>
+                                <span class="small fw-bold">Paraben Free</span>
+                            </div>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-check text-primary-color me-2"></i>
+                                <span class="small fw-bold">No Sulphates</span>
+                            </div>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-check text-primary-color me-2"></i>
+                                <span class="small fw-bold">Handmade in India</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <a href="{{ url_for('about') }}" class="btn btn-primary px-5">Read Our Story <i class="fas fa-arrow-right ms-2"></i></a>
                 </div>
             </div>
         </div>

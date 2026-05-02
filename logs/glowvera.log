@@ -53,3 +53,7 @@
 2026-04-30 17:30:39,541 INFO: Database tables verified/created [in C:\Users\Shahzaib Shahzad\Desktop\New folder (4)\Glow-vera\app.py:77]
 2026-05-02 20:37:49,137 INFO: Glow-Vera startup [in C:\Users\Shahzaib Shahzad\Desktop\New folder (4)\Glow-vera\app.py:44]
 2026-05-02 20:37:49,142 WARNING: Running with default SECRET_KEY! This is insecure for production. [in C:\Users\Shahzaib Shahzad\Desktop\New folder (4)\Glow-vera\app.py:48]
+2026-05-02 21:22:12,776 INFO: Glow-Vera startup [in C:\Users\Shahzaib Shahzad\Desktop\New folder (4)\Glow-vera\app.py:44]
+2026-05-02 21:22:12,778 WARNING: Running with default SECRET_KEY! This is insecure for production. [in C:\Users\Shahzaib Shahzad\Desktop\New folder (4)\Glow-vera\app.py:48]
+2026-05-02 21:36:24,036 INFO: Glow-Vera startup [in C:\Users\Shahzaib Shahzad\Desktop\New folder (4)\Glow-vera\app.py:44]
+2026-05-02 21:36:24,039 WARNING: Running with default SECRET_KEY! This is insecure for production. [in C:\Users\Shahzaib Shahzad\Desktop\New folder (4)\Glow-vera\app.py:48]
