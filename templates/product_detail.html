@@ -158,21 +158,25 @@
     <!-- Related Products -->
     <div class="mt-5">
         <h3 class="section-title text-center mb-4">You May Also Like</h3>
-        <div class="row">
-            <!-- This would typically load related products from the database -->
-            <div class="col-lg-3 col-md-6 mb-4">
-                <div class="product-card h-100">
-                    <img src="https://placehold.co/300x300/90EE90/FFFFFF?text=Related+Product" 
-                         alt="Related Product" 
-                         class="product-image w-100">
-                    <div class="card-body p-3">
-                        <h6 class="product-title">Related Product</h6>
-                        <div class="d-flex justify-content-between align-items-center">
-                            <span class="product-price">$12.99</span>
-                            <a href="#" class="btn btn-outline-primary btn-sm">View</a>
+        <div class="horizontal-scroll-wrapper" data-aos="fade-up">
+            <div class="horizontal-scroll-content pb-4">
+                <!-- Fallback to some items if related_products is not passed -->
+                {% for i in range(5) %}
+                <div class="scroll-item">
+                    <div class="product-card h-100 shadow-sm">
+                        <img src="https://placehold.co/300x300/F1F8E9/1B5E20?text=Botanical+Glow" 
+                             alt="Related Product" 
+                             class="product-image w-100" style="height: 180px;">
+                        <div class="card-body p-3">
+                            <h6 class="product-title small mb-1">Naturals Blend #{{ i + 1 }}</h6>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="product-price fs-6">Rs 1,200</span>
+                                <a href="{{ url_for('products') }}" class="btn btn-outline-primary btn-sm">View</a>
+                            </div>
                         </div>
                     </div>
                 </div>
+                {% endfor %}
             </div>
         </div>
     </div>
