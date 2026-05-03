@@ -89,9 +89,11 @@ To manage the store, navigate to `/admin` and use the default credentials:
 ## 📁 Project Structure
 
 ```text
-Glowvera Naturals/
+├── .gitignore             # Git exclusion rules
 ├── app.py                 # Core Flask Logic & Routes
-├── glowvera.db            # SQLite Database
+├── instance/              # Instance-specific files (Ignored)
+│   └── glowvera.db        # SQLite Database
+├── logs/                  # Application logs (Ignored)
 ├── static/                # Assets
 │   ├── css/style.css      # Premium UI Styles
 │   └── images/            # Local Asset Storage (Products, Logo)
@@ -102,6 +104,15 @@ Glowvera Naturals/
 │   ├── contact.html       # Customer Inquiry Page
 │   └── *_policy.html      # Legal & Policy Templates
 └── requirements.txt       # Project Dependencies
+
+### File Details
+- **`app.py`**: The main entry point of the application. Handles routing, database models, and server logic.
+- **`.gitignore`**: Specifies files and directories that Git should ignore (e.g., local databases, logs, virtual environments).
+- **`instance/`**: Contains the local SQLite database. This folder is ignored by Git to prevent production data from being overwritten by local data.
+- **`logs/`**: Stores application execution logs. Ignored by Git to avoid merge conflicts and bloating the repository.
+- **`static/`**: Contains public-facing assets like CSS, JavaScript, and product images.
+- **`templates/`**: Jinja2 HTML templates for the frontend and admin dashboard.
+- **`requirements.txt`**: List of Python packages required to run the application.
 ```
 
 ---

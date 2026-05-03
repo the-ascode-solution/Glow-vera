@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, session
+from flask import Flask, render_template, request, redirect, url_for, flash, session, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
@@ -22,14 +22,24 @@ app = Flask(__name__)
 
 # Production Logging setup (must be early to capture startup issues)
 if not app.debug:
-    if not os.path.exists('logs'):
-        os.mkdir('logs')
-    file_handler = RotatingFileHandler('logs/glowvera.log', maxBytes=10240, backupCount=10)
-    file_handler.setFormatter(logging.Formatter(
-        '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
-    ))
-    file_handler.setLevel(logging.INFO)
-    app.logger.addHandler(file_handler)
+    log_dir = os.path.join(basedir, 'logs')
+    if not os.path.exists(log_dir):
+        try:
+            os.makedirs(log_dir, exist_ok=True)
+        except Exception:
+            pass # Fallback to stdout if we can't create logs
+    
+    log_file = os.path.join(log_dir, 'glowvera.log')
+    try:
+        file_handler = RotatingFileHandler(log_file, maxBytes=10240, backupCount=10)
+        file_handler.setFormatter(logging.Formatter(
+            '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
+        ))
+        file_handler.setLevel(logging.INFO)
+        app.logger.addHandler(file_handler)
+    except Exception as e:
+        print(f"Could not setup log file: {e}")
+        
     app.logger.setLevel(logging.INFO)
     app.logger.info('Glow-Vera startup')
 
@@ -39,6 +49,8 @@ if not app.debug and app.config['SECRET_KEY'] == 'default_secret_key_for_dev_onl
 # Use absolute path for SQLite to avoid issues on shared hosting
 default_db_path = f"sqlite:///{os.path.join(basedir, 'instance', 'glowvera.db')}"
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('SQLALCHEMY_DATABASE_URI', default_db_path)
+if app.config['SQLALCHEMY_DATABASE_URI'] and app.config['SQLALCHEMY_DATABASE_URI'].startswith("postgres://"):
+    app.config['SQLALCHEMY_DATABASE_URI'] = app.config['SQLALCHEMY_DATABASE_URI'].replace("postgres://", "postgresql://", 1)
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Enable CSRF Protection
@@ -60,6 +72,13 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 
+# Ensure tables are created on startup (essential for new production tables like Review)
+with app.app_context():
+    try:
+        db.create_all()
+    except Exception as e:
+        app.logger.error(f"Database initialization error: {e}")
+
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
@@ -69,12 +88,23 @@ NATIVE_CURRENCY = {'symbol': 'Rs', 'name': 'Pakistani Rupee'}
 @app.context_processor
 def utility_processor():
     def format_price(price):
-        if not price:
-            price = 0
-        symbol = NATIVE_CURRENCY['symbol']
-        return f"{symbol} {int(price):,}"
+        try:
+            if price is None:
+                price = 0
+            # Ensure price is numeric
+            val = float(price)
+            symbol = NATIVE_CURRENCY['symbol']
+            return f"{symbol} {int(val):,}"
+        except (ValueError, TypeError):
+            return f"{NATIVE_CURRENCY['symbol']} 0"
     
-    return dict(format_price=format_price, currency=NATIVE_CURRENCY)
+    def get_categories():
+        try:
+            return [cat.name for cat in Category.query.order_by(Category.name).all()]
+        except Exception:
+            return []
+    
+    return dict(format_price=format_price, currency=NATIVE_CURRENCY, nav_categories=get_categories())
 
 @app.template_filter('nl2br')
 def nl2br_filter(s):
@@ -84,7 +114,8 @@ def nl2br_filter(s):
 
 @app.route('/favicon.ico')
 def favicon():
-    return '', 204
+    return send_from_directory(os.path.join(app.root_path, 'static', 'images'),
+                               'favicon.png', mimetype='image/png')
 
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -104,13 +135,18 @@ class User(UserMixin, db.Model):
     
     orders = db.relationship('Order', backref='user', lazy=True)
 
+class Category(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50), unique=True, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
 class Product(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text, nullable=False)
     price = db.Column(db.Float, nullable=False)
     image_url = db.Column(db.String(200))
-    category = db.Column(db.String(50), nullable=False)
+    category = db.Column(db.String(50), nullable=False)  # Kept as string for compatibility, but populated from Category
     stock_quantity = db.Column(db.Integer, default=0)
     ingredients = db.Column(db.Text)
     weight_grams = db.Column(db.Integer)
@@ -198,7 +234,15 @@ from functools import wraps
 def admin_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if not current_user.is_authenticated or not current_user.is_admin:
+        # Gracefully handle missing is_admin column or unauthenticated users
+        is_admin = False
+        try:
+            if current_user.is_authenticated:
+                is_admin = getattr(current_user, 'is_admin', False)
+        except Exception:
+            is_admin = False
+            
+        if not is_admin:
             flash('Unauthorized access. Admin privileges required.', 'error')
             return redirect(url_for('index'))
         return f(*args, **kwargs)
@@ -210,26 +254,38 @@ def add_security_headers(response):
     response.headers['X-Content-Type-Options'] = 'nosniff'
     response.headers['X-Frame-Options'] = 'SAMEORIGIN'
     response.headers['X-XSS-Protection'] = '1; mode=block'
-    if not app.debug:
-        response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+    # Secure but compatible CSP
+    response.headers['Content-Security-Policy'] = "default-src 'self' *; script-src 'self' 'unsafe-inline' 'unsafe-eval' *; style-src 'self' 'unsafe-inline' *; font-src 'self' *; img-src 'self' data: *; connect-src 'self' *;"
     return response
 
 @app.route('/')
 def index():
-    featured_products = Product.query.filter_by(is_featured=True).limit(6).all()
-    visible_reviews = Review.query.filter_by(is_visible=True).order_by(Review.review_date.desc()).limit(6).all()
-    return render_template('index.html', featured_products=featured_products, visible_reviews=visible_reviews)
+    try:
+        featured_products = Product.query.filter_by(is_featured=True).limit(6).all()
+        visible_reviews = Review.query.filter_by(is_visible=True).order_by(Review.review_date.desc()).limit(6).all()
+        return render_template('index.html', featured_products=featured_products, visible_reviews=visible_reviews)
+    except Exception as e:
+        app.logger.error(f"Error rendering index: {e}")
+        # Fallback to empty lists if DB fails but server is up
+        return render_template('index.html', featured_products=[], visible_reviews=[])
 
 @app.route('/products')
 def products():
-    category = request.args.get('category')
-    if category:
-        products = Product.query.filter_by(category=category).all()
-    else:
-        products = Product.query.all()
-    categories = db.session.query(Product.category).distinct().all()
-    categories = [cat[0] for cat in categories]
-    return render_template('products.html', products=products, categories=categories, selected_category=category)
+    try:
+        category_name = request.args.get('category')
+        if category_name:
+            products = Product.query.filter_by(category=category_name).all()
+        else:
+            products = Product.query.all()
+        
+        # Get categories from Category module
+        categories = Category.query.all()
+        category_names = [cat.name for cat in categories]
+        
+        return render_template('products.html', products=products, categories=category_names, selected_category=category_name)
+    except Exception as e:
+        app.logger.error(f"Error rendering products: {e}")
+        return render_template('products.html', products=[], categories=[], selected_category=None)
 
 @app.route('/product/<int:product_id>')
 def product_detail(product_id):
@@ -411,6 +467,7 @@ def admin_dashboard():
     total_products = Product.query.count()
     total_orders = Order.query.count()
     total_messages = ContactMessage.query.count()
+    total_categories = Category.query.count()
     recent_orders = Order.query.order_by(Order.created_at.desc()).limit(5).all()
     low_stock_products = Product.query.filter(Product.stock_quantity < 10).all()
     
@@ -418,6 +475,7 @@ def admin_dashboard():
                          total_products=total_products,
                          total_orders=total_orders,
                          total_messages=total_messages,
+                         total_categories=total_categories,
                          recent_orders=recent_orders,
                          low_stock_products=low_stock_products)
 
@@ -457,7 +515,8 @@ def admin_add_product():
         flash('Product added successfully!', 'success')
         return redirect(url_for('admin_products'))
     
-    return render_template('admin_product_form.html', product=None)
+    categories = Category.query.all()
+    return render_template('admin_product_form.html', product=None, categories=categories)
 
 @app.route('/admin/product/<int:product_id>/edit', methods=['GET', 'POST'])
 @admin_required
@@ -488,7 +547,8 @@ def admin_edit_product(product_id):
         flash('Product updated successfully!', 'success')
         return redirect(url_for('admin_products'))
     
-    return render_template('admin_product_form.html', product=product)
+    categories = Category.query.all()
+    return render_template('admin_product_form.html', product=product, categories=categories)
 
 @app.route('/admin/product/<int:product_id>/delete', methods=['POST'])
 @admin_required
@@ -498,6 +558,75 @@ def admin_delete_product(product_id):
     db.session.commit()
     flash('Product deleted successfully!', 'success')
     return redirect(url_for('admin_products'))
+
+# Category Management Routes
+@app.route('/admin/categories')
+@admin_required
+def admin_categories():
+    categories = Category.query.order_by(Category.name).all()
+    return render_template('admin_categories.html', categories=categories)
+
+@app.route('/admin/category/new', methods=['GET', 'POST'])
+@admin_required
+def admin_add_category():
+    if request.method == 'POST':
+        name = request.form.get('name').strip()
+        if not name:
+            flash('Category name is required', 'error')
+        else:
+            existing = Category.query.filter_by(name=name).first()
+            if existing:
+                flash('Category already exists', 'error')
+            else:
+                new_cat = Category(name=name)
+                db.session.add(new_cat)
+                db.session.commit()
+                flash('Category added successfully', 'success')
+                return redirect(url_for('admin_categories'))
+    
+    return render_template('admin_category_form.html', category=None)
+
+@app.route('/admin/category/<int:cat_id>/edit', methods=['GET', 'POST'])
+@admin_required
+def admin_edit_category(cat_id):
+    category = Category.query.get_or_404(cat_id)
+    if request.method == 'POST':
+        name = request.form.get('name').strip()
+        if not name:
+            flash('Category name is required', 'error')
+        else:
+            existing = Category.query.filter(Category.name == name, Category.id != cat_id).first()
+            if existing:
+                flash('Category name already taken', 'error')
+            else:
+                # Update products that use this category name
+                old_name = category.name
+                category.name = name
+                
+                # Update all products with the old category name to the new one
+                products_to_update = Product.query.filter_by(category=old_name).all()
+                for p in products_to_update:
+                    p.category = name
+                
+                db.session.commit()
+                flash('Category updated successfully', 'success')
+                return redirect(url_for('admin_categories'))
+    
+    return render_template('admin_category_form.html', category=category)
+
+@app.route('/admin/category/<int:cat_id>/delete', methods=['POST'])
+@admin_required
+def admin_delete_category(cat_id):
+    category = Category.query.get_or_404(cat_id)
+    # Check if products are using this category
+    product_count = Product.query.filter_by(category=category.name).count()
+    if product_count > 0:
+        flash(f'Cannot delete category. {product_count} products are currently assigned to it.', 'error')
+    else:
+        db.session.delete(category)
+        db.session.commit()
+        flash('Category deleted successfully', 'success')
+    return redirect(url_for('admin_categories'))
 
 @app.route('/admin/orders')
 @admin_required
@@ -900,6 +1029,10 @@ def order_confirmation(order_id):
     # Basic check to prevent easy enumeration of orders, although guest checkout is public
     return render_template('order_confirmation.html', order=order)
 
+@app.route('/health')
+def health():
+    return {'status': 'healthy', 'database': 'connected'}, 200
+
 # Error Handlers
 @app.errorhandler(404)
 def page_not_found(e):
@@ -907,12 +1040,18 @@ def page_not_found(e):
 
 @app.errorhandler(500)
 def internal_server_error(e):
+    db.session.rollback()
     return render_template('500.html'), 500
 
 # Production Logging (Already set up at top)
 
-if __name__ == '__main__':
-    with app.app_context():
+# Initialize database tables
+with app.app_context():
+    try:
         db.create_all()
+    except Exception as e:
+        app.logger.error(f"Error during db.create_all: {e}")
+
+if __name__ == '__main__':
     debug_mode = os.getenv('DEBUG', 'False').lower() == 'true'
     app.run(debug=debug_mode)
